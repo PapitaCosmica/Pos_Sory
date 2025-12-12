@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Caja | POS Simple (Liquid Glass)</title>
+    
+    <link rel="stylesheet" href="styles.css"> 
+    
+    <style>
+        /* -------------------------------------- */
+        /* BASE Y ESTRUCTURA (Para integrarse con el CSS externo) */
+        /* -------------------------------------- */
+        body { 
+            /* Se usan los estilos de body de styles.css (fondo animado) */
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .main-container {
+            /* Usamos la clase glass-container para el contenedor principal */
+            max-width: 650px;
+            width: 90%;
+            padding: 20px 40px;
+            color: #fff; /* Texto principal blanco */
+        }
+
+        h2 { 
+            color: #fff;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            font-size: 2em;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3); 
+        }
+
+        /* -------------------------------------- */
+        /* SECCIONES DE ESTADO Y FORMULARIOS */
+        /* -------------------------------------- */
+        .seccion { 
+            /* Las secciones internas también tienen un toque de cristal */
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .abierta { 
+            /* Color de acento para la caja abierta */
+            background-color: rgba(135, 255, 135, 0.1); /* Verde suave */
+        }
+        
+        .cerrada { 
+            /* Color de acento para la caja cerrada */
+            background-color: rgba(255, 135, 135, 0.1); /* Rojo suave */
+        }
+        
+        h3 {
+            margin-top: 0;
+            color: #fff;
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+        }
+
+        label { 
+            display: block; 
+            margin-top: 15px; 
+            font-weight: bold; 
+            color: #fff;
+        }
+
+        input[type="number"], button { 
+            /* Usamos las clases de cristal definidas en styles.css */
+            width: 100%; 
+            box-sizing: border-box;
+        }
+        
+        /* Ajuste para el Input de número para usar el estilo glass-input */
+        #formAbrirCaja input, #formCerrarCaja input {
+            /* Sobrescribimos el estilo genérico de arriba con el de cristal */
+            margin-top: 5px; 
+            width: 100%;
+        }
+
+        /* Estilos de la barra de navegación */
+        .nav-bar { 
+            margin-bottom: 20px; 
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        .nav-bar a { 
+            margin: 0 10px; 
+            text-decoration: none; 
+            color: #87ceeb; /* Azul claro para enlaces */
+            transition: color 0.3s;
+        }
+        .nav-bar a:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container glass-container">
+        
+        <div class="nav-bar">
+            <a href="index.html">Menú</a> |
+            <a href="venta.html">Venta</a> |
+            <a href="productos.html">Productos</a> |
+            <a href="reportes.html">Reportes</a>
+        </div>
+
+        <h2>🏦 Control de Caja y Cortes (Firebase)</h2>
+
+        <div id="estadoCaja" class="seccion">
+            <h3>Cargando estado...</h3>
+        </div>
+
+        <div id="seccionAbrir" class="seccion cerrada" style="display: none;">
+            <h3>Abrir Nueva Sesión</h3>
+            <form id="formAbrirCaja">
+                <label for="monto_inicial_abrir">Monto Inicial (Fondo):</label>
+                <input type="number" step="0.01" id="monto_inicial_abrir" name="monto_inicial" value="0.00" class="glass-input" required>
+                <button type="submit" class="glass-button">💰 Iniciar Caja</button>
+            </form>
+        </div>
+
+        <div id="seccionCerrar" class="seccion abierta" style="display: none;">
+            <h3>Cierre de Caja (Corte)</h3>
+            <p>Apertura: <strong id="cierre_fecha_apertura"></strong></p>
+            <p>Monto Inicial: $<strong id="cierre_monto_inicial"></strong></p>
+            <p>Ventas de la Sesión: $<strong id="cierre_total_vendido"></strong> (<span id="cierre_num_ventas"></span> ventas)</p>
+            <hr>
+            <p>TOTAL ESPERADO EN SISTEMA: $<strong id="cierre_total_esperado"></strong></p>
+            
+            <form id="formCerrarCaja">
+                <input type="hidden" id="cierre_doc_id" name="doc_id">
+                <input type="hidden" id="cierre_monto_sistema_hidden" name="monto_sistema">
+                <input type="hidden" id="cierre_monto_inicial_hidden" name="monto_inicial">
+
+                <label for="monto_contado_cerrar">Monto Contado Físico:</label>
+                <input type="number" step="0.01" id="monto_contado_cerrar" name="monto_contado" class="glass-input" required>
+                <button type="submit" class="glass-button">🔒 Cerrar Caja y Registrar Corte</button>
+            </form>
+        </div>
+
+        <script type="module">
+            import { 
+                db,
+                collection,
+                addDoc,
+                getDocs,
+                updateDoc,
+                doc,
+                query,
+                where,
+                orderBy,
+                limit
+            } from './firebase_init.js'; 
+
+            const cajasRef = collection(db, "cajas");
+            const ventasRef = collection(db, "ventas");
+
+            document.addEventListener('DOMContentLoaded', () => {
+                verificarEstadoCaja();
+                document.getElementById('formAbrirCaja').addEventListener('submit', abrirCaja);
+                document.getElementById('formCerrarCaja').addEventListener('submit', cerrarCaja);
+            });
+
+            // --- 1. VERIFICAR ESTADO Y CALCULAR VENTAS ---
+
+            async function verificarEstadoCaja() {
+                const estadoDiv = document.getElementById('estadoCaja');
+                estadoDiv.innerHTML = '<h3>Cargando estado...</h3>';
+                
+                try {
+                    // Buscar la última caja que no tenga fecha_cierre (esté abierta)
+                    const q = query(cajasRef, where("fecha_cierre", "==", null), orderBy("fecha_apertura", "desc"), limit(1));
+                    const snapshotCaja = await getDocs(q);
+                    
+                    if (snapshotCaja.empty) {
+                        // CAJA CERRADA
+                        mostrarSeccionCajaCerrada();
+                        return;
+                    }
+                    
+                    // CAJA ABIERTA: Obtenemos el único documento
+                    const cajaDoc = snapshotCaja.docs[0];
+                    const cajaData = cajaDoc.data();
+                    const cajaDocId = cajaDoc.id;
+
+                    // 2. CALCULAR VENTAS desde la apertura de esta caja
+                    // Las ventas sin id_corte asignado pertenecen a esta sesión
+                    const qVentas = query(ventasRef, where("id_corte", "==", null));
+                    const snapshotVentas = await getDocs(qVentas);
+
+                    let totalVendido = 0;
+                    snapshotVentas.forEach(doc => {
+                        // Asegurarse de que el total_venta es un número antes de sumar
+                        totalVendido += parseFloat(doc.data().total_venta || 0);
+                    });
+
+                    const montoInicial = parseFloat(cajaData.monto_inicial || 0);
+                    const totalEsperado = montoInicial + totalVendido;
+
+                    // RENDERIZAR CAJA ABIERTA
+                    renderizarCajaAbierta(cajaDocId, cajaData, totalVendido, totalEsperado, snapshotVentas.size);
+
+                } catch (error) {
+                    console.error("Error al verificar estado:", error);
+                    estadoDiv.innerHTML = `<p style="color:red;">Error de conexión a Firebase: ${error.message}</p>`;
+                }
+            }
+            
+            function mostrarSeccionCajaCerrada() {
+                document.getElementById('estadoCaja').className = 'seccion cerrada';
+                document.getElementById('estadoCaja').innerHTML = `<h3>❌ Caja Cerrada</h3><p>No hay una caja abierta. Debe iniciar una sesión.</p>`;
+                document.getElementById('seccionAbrir').style.display = 'block';
+                document.getElementById('seccionCerrar').style.display = 'none';
+            }
+
+            function renderizarCajaAbierta(docId, data, vendido, esperado, numVentas) {
+                const estadoDiv = document.getElementById('estadoCaja');
+                estadoDiv.className = 'seccion abierta';
+                estadoDiv.innerHTML = `<h3>✅ Caja Abierta</h3>
+                    <p>Sesión ID: <strong>${docId}</strong></p>
+                    <p>Abierta desde: <strong>${data.fecha_apertura}</strong></p>
+                    <p>Vendido hoy: <strong>$${vendido.toFixed(2)}</strong></p>
+                    <p>Total Esperado: <strong>$${esperado.toFixed(2)}</strong></p>
+                `;
+
+                document.getElementById('seccionAbrir').style.display = 'none';
+                document.getElementById('seccionCerrar').style.display = 'block';
+
+                // Llenar datos de cierre
+                document.getElementById('cierre_doc_id').value = docId;
+                document.getElementById('cierre_fecha_apertura').textContent = data.fecha_apertura;
+                document.getElementById('cierre_monto_inicial').textContent = parseFloat(data.monto_inicial || 0).toFixed(2);
+                document.getElementById('cierre_total_vendido').textContent = vendido.toFixed(2);
+                document.getElementById('cierre_num_ventas').textContent = numVentas;
+                document.getElementById('cierre_total_esperado').textContent = esperado.toFixed(2);
+                
+                // Campos ocultos para enviar al cierre
+                document.getElementById('cierre_monto_sistema_hidden').value = esperado.toFixed(2);
+                document.getElementById('cierre_monto_inicial_hidden').value = parseFloat(data.monto_inicial || 0).toFixed(2);
+            }
+
+
+            // --- 2. ABRIR CAJA (CREATE) ---
+
+            async function abrirCaja(event) {
+                event.preventDefault();
+                const montoInicial = parseFloat(document.getElementById('monto_inicial_abrir').value || 0);
+                
+                if (await obtenerCajaAbiertaDirecta()) {
+                    alert("Ya existe una caja abierta.");
+                    return;
+                }
+
+                try {
+                    const nuevaCaja = {
+                        nombre_caja: 'Caja Principal',
+                        monto_inicial: montoInicial,
+                        // Usamos un timestamp de Firestore para la apertura
+                        fecha_apertura: new Date().toLocaleString(), 
+                        fecha_cierre: null, // Marca la caja como abierta
+                        cortes: [] // Almacenará los cortes dentro de la sesión de caja
+                    };
+
+                    await addDoc(cajasRef, nuevaCaja);
+                    alert(`Caja abierta con éxito. Monto inicial: $${montoInicial.toFixed(2)}`);
+                    verificarEstadoCaja(); 
+
+                } catch (error) {
+                    console.error("Error al abrir caja:", error);
+                    alert('Error al abrir caja: ' + error.message);
+                }
+            }
+            
+            // Función auxiliar para obtener rápidamente el estado
+            async function obtenerCajaAbiertaDirecta() {
+                const q = query(cajasRef, where("fecha_cierre", "==", null), limit(1));
+                const snapshot = await getDocs(q);
+                return !snapshot.empty;
+            }
+
+
+            // --- 3. CERRAR CAJA (UPDATE) ---
+
+            async function cerrarCaja(event) {
+                event.preventDefault();
+                
+                const docId = document.getElementById('cierre_doc_id').value;
+                const montoContado = parseFloat(document.getElementById('monto_contado_cerrar').value || 0);
+                const montoSistema = parseFloat(document.getElementById('cierre_monto_sistema_hidden').value || 0);
+                const montoInicial = parseFloat(document.getElementById('cierre_monto_inicial_hidden').value || 0);
+
+                if (!docId) {
+                    alert("Error: No se encontró la sesión de caja activa.");
+                    return;
+                }
+
+                if (!confirm(`Total Esperado: $${montoSistema.toFixed(2)}. ¿Desea confirmar el cierre de caja con $${montoContado.toFixed(2)} contado?`)) {
+                    return;
+                }
+
+                try {
+                    // 1. Registrar el Corte
+                    const corte = {
+                        fecha_corte: new Date().toLocaleString(),
+                        monto_inicial: montoInicial,
+                        monto_sistema: montoSistema,
+                        monto_contado: montoContado,
+                        desfase: montoContado - montoSistema
+                    };
+                    
+                    // 2. Cerrar la Caja y guardar el Corte
+                    const cajaDocRef = doc(db, "cajas", docId);
+                    await updateDoc(cajaDocRef, {
+                        fecha_cierre: corte.fecha_corte,
+                        // Agregar el corte al historial dentro del documento de caja
+                        cortes: [corte] 
+                    });
+                    
+                    // 3. Opcional: Podríamos actualizar todas las ventas sin corte aquí,
+                    // pero por simplicidad, la lógica de *estado* asume que las ventas sin id_corte
+                    // pertenecen a la última caja cerrada. No necesitamos actualizar la venta aquí.
+
+                    alert(`Cierre de Caja exitoso. Desfase: $${corte.desfase.toFixed(2)}`);
+                    verificarEstadoCaja();
+
+                } catch (error) {
+                    console.error("Error al cerrar caja:", error);
+                    alert('Error al cerrar caja: ' + error.message);
+                }
+            }
+        </script>
+    </div>
+    <script src="animations.js"></script>
+</body>
+</html>

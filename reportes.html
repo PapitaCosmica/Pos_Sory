@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes de Ventas | POS Simple (Liquid Glass)</title>
+    
+    <link rel="stylesheet" href="styles.css"> 
+    
+    <style>
+        /* -------------------------------------- */
+        /* BASE Y ESTRUCTURA */
+        /* -------------------------------------- */
+        body { 
+            /* Se usan los estilos de body de styles.css (fondo animado) */
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; 
+            min-height: 100vh;
+        }
+
+        .main-container {
+            /* Usamos la clase glass-container para el contenedor principal */
+            max-width: 1000px;
+            width: 95%;
+            padding: 30px;
+            color: #fff; /* Texto principal blanco */
+        }
+
+        h2 { 
+            color: #fff;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            font-size: 2em;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3); 
+        }
+
+        /* -------------------------------------- */
+        /* SECCIONES Y REPORTES */
+        /* -------------------------------------- */
+        .reporte-section { 
+            /* Las secciones internas también tienen el efecto cristal */
+            margin-bottom: 30px; 
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        h3 {
+            color: #fff;
+            margin-top: 0;
+            margin-bottom: 15px;
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+        }
+
+        /* -------------------------------------- */
+        /* TABLA (Con transparencia) */
+        /* -------------------------------------- */
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 15px; 
+            background: rgba(255, 255, 255, 0.05); /* Fondo muy sutil */
+        }
+        th, td { 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            padding: 10px; 
+            text-align: left;
+            color: #fff;
+        }
+        th { 
+            background-color: rgba(0, 0, 0, 0.3); /* Encabezado más oscuro */
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.05); /* Rayado sutil */
+        }
+        
+        /* Navegación */
+        .nav-bar { 
+            margin-bottom: 20px; 
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        .nav-bar a { 
+            margin: 0 10px; 
+            text-decoration: none; 
+            color: #87ceeb; 
+            transition: color 0.3s;
+        }
+        .nav-bar a:hover {
+            color: #fff;
+        }
+        
+        /* Resaltado de Total */
+        strong {
+            color: #ffcc66; /* Dorado/Amarillo para totales */
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container glass-container">
+        
+        <div class="nav-bar">
+            <a href="index.html">Menú</a> |
+            <a href="venta.html">Venta</a> |
+            <a href="productos.html">Productos</a> |
+            <a href="caja.html">Caja</a>
+        </div>
+
+        <h2>📊 Reportes de Ventas y Cortes (Firebase)</h2>
+
+        <div class="reporte-section">
+            <h3>Ventas en la Sesión Actual (Pendientes de Corte)</h3>
+            <p>Total vendido en sesión: $<strong id="totalVendidoHoy">0.00</strong></p>
+            <table id="tablaVentasHoy">
+                <thead>
+                    <tr>
+                        <th>ID Venta</th>
+                        <th>Fecha/Hora</th>
+                        <th>Total</th>
+                        <th>Tipo Pago</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="4">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="reporte-section">
+            <h3>Historial de Cortes de Caja</h3>
+            <table id="tablaCortes">
+                <thead>
+                    <tr>
+                        <th>ID Sesión</th>
+                        <th>Fecha Corte</th>
+                        <th>Monto Inicial</th>
+                        <th>Sistema Esperado</th>
+                        <th>Monto Contado</th>
+                        <th>Desfase</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="6">Cargando historial de cortes...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <script type="module">
+            import { 
+                db,
+                collection,
+                getDocs,
+                query,
+                where,
+                orderBy
+            } from './firebase_init.js'; 
+
+            const ventasRef = collection(db, "ventas");
+            const cajasRef = collection(db, "cajas");
+
+            document.addEventListener('DOMContentLoaded', () => {
+                cargarReporteVentasHoy();
+                cargarHistorialCortes();
+            });
+            
+            // --- 1. CARGAR VENTAS DE LA SESIÓN ACTUAL (PENDIENTES DE CORTE) ---
+
+            async function cargarReporteVentasHoy() {
+                const tablaBody = document.querySelector('#tablaVentasHoy tbody');
+                let totalVendido = 0;
+                tablaBody.innerHTML = '<tr><td colspan="4">Cargando...</td></tr>';
+                
+                try {
+                    // Query: Ventas donde id_corte es nulo (es decir, ventas de la sesión abierta)
+                    const qVentas = query(ventasRef, where("id_corte", "==", null), orderBy("fecha_hora", "desc"));
+                    const snapshotVentas = await getDocs(qVentas);
+                    
+                    tablaBody.innerHTML = '';
+
+                    if (snapshotVentas.empty) {
+                        tablaBody.innerHTML = '<tr><td colspan="4">No hay ventas pendientes de corte.</td></tr>';
+                        document.getElementById('totalVendidoHoy').textContent = '0.00';
+                        return;
+                    }
+
+                    snapshotVentas.forEach(doc => {
+                        const venta = doc.data();
+                        // Usar || 0 para manejar posibles nulos en la base de datos
+                        const total = parseFloat(venta.total_venta || 0); 
+                        totalVendido += total;
+
+                        const fila = tablaBody.insertRow();
+                        fila.insertCell(0).textContent = doc.id;
+                        fila.insertCell(1).textContent = venta.fecha_hora;
+                        fila.insertCell(2).textContent = `$${total.toFixed(2)}`;
+                        fila.insertCell(3).textContent = venta.tipo_pago;
+                    });
+                    
+                    document.getElementById('totalVendidoHoy').textContent = totalVendido.toFixed(2);
+
+                } catch (error) {
+                    console.error('Error al cargar reporte de ventas:', error);
+                    tablaBody.innerHTML = `<tr><td colspan="4" style="color: red;">Error: ${error.message}</td></tr>`;
+                }
+            }
+
+            // --- 2. CARGAR HISTORIAL DE CORTES (CAJAS CERRADAS) ---
+            
+            async function cargarHistorialCortes() {
+                const tablaBody = document.querySelector('#tablaCortes tbody');
+                tablaBody.innerHTML = '<tr><td colspan="6">Cargando historial de cortes...</td></tr>';
+                
+                try {
+                    // Query: Buscar todas las cajas que sí tienen fecha_cierre (están cortadas)
+                    const qCortes = query(cajasRef, where("fecha_cierre", "!=", null), orderBy("fecha_cierre", "desc"));
+                    const snapshotCortes = await getDocs(qCortes);
+                    
+                    tablaBody.innerHTML = '';
+                    
+                    if (snapshotCortes.empty) {
+                        tablaBody.innerHTML = '<tr><td colspan="6">No hay cortes de caja registrados.</td></tr>';
+                        return;
+                    }
+                    
+                    snapshotCortes.forEach(cajaDoc => {
+                        const data = cajaDoc.data();
+                        // Asumimos que el corte completo está en el primer índice del array 'cortes'
+                        const corte = data.cortes && data.cortes.length > 0 ? data.cortes[0] : null; 
+
+                        if (corte) {
+                             // Usar || 0 para manejo seguro de números
+                            const montoInicial = parseFloat(corte.monto_inicial || 0);
+                            const montoSistema = parseFloat(corte.monto_sistema || 0);
+                            const montoContado = parseFloat(corte.monto_contado || 0);
+                            
+                            const desfase = montoContado - montoSistema;
+                            const fila = tablaBody.insertRow();
+                            
+                            fila.insertCell(0).textContent = cajaDoc.id; 
+                            fila.insertCell(1).textContent = corte.fecha_corte;
+                            fila.insertCell(2).textContent = `$${montoInicial.toFixed(2)}`;
+                            fila.insertCell(3).textContent = `$${montoSistema.toFixed(2)}`;
+                            fila.insertCell(4).textContent = `$${montoContado.toFixed(2)}`;
+                            
+                            // Colorear el desfase
+                            let color = 'white';
+                            if (desfase > 0) {
+                                color = '#87ceeb'; // Azul claro (Sobrante)
+                            } else if (desfase < 0) {
+                                color = '#ff6666'; // Rojo (Faltante)
+                            } else {
+                                color = '#aaffaa'; // Verde (Exacto)
+                            }
+
+                            fila.insertCell(5).innerHTML = `<strong style="color: ${color};">$${desfase.toFixed(2)}</strong>`;
+                        }
+                    });
+                    
+                } catch (error) {
+                    console.error('Error al cargar historial de cortes:', error);
+                    tablaBody.innerHTML = `<tr><td colspan="6" style="color: red;">Error de conexión: ${error.message}</td></tr>`;
+                }
+            }
+        </script>
+    </div>
+    <script src="animations.js"></script>
+</body>
+</html>

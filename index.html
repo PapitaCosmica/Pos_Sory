@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú Principal | POS Simple (Liquid Glass)</title>
+    
+    <link rel="manifest" href="manifest.json">
+    
+    <link rel="stylesheet" href="styles.css"> 
+    
+    <style>
+        /* Estilos de Contenedor y Título para el Layout del POS */
+        .menu-container {
+            max-width: 900px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .opciones-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        /* ---------------------------------------------------- */
+        /* Estilos de las Tarjetas de Menú (Aplicando el Glass) */
+        /* ---------------------------------------------------- */
+        .menu-card {
+            text-decoration: none;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 25px;
+            border-radius: 12px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .menu-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        .menu-card h2 {
+            margin: 5px 0 10px 0;
+            font-size: 1.6em;
+            color: #fff;
+        }
+        
+        .menu-card p {
+            font-size: 0.95em;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 0;
+        }
+        
+        .icon {
+            font-size: 3em;
+            margin-bottom: 5px;
+        }
+
+        /* ---------------------------------------------------- */
+        /* ESTILOS ESPECÍFICOS DE ALERTA DE STOCK */
+        /* ---------------------------------------------------- */
+        .stock-alert-box {
+            background-color: rgba(255, 165, 0, 0.85); /* Amarillo/Naranja semi-transparente */
+            color: #333;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(5px);
+            text-align: left;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            font-weight: bold;
+        }
+        .stock-alert-box ul {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0 0;
+        }
+        .stock-alert-box ul li {
+            padding: 5px 0;
+            border-bottom: 1px dashed rgba(0, 0, 0, 0.2);
+        }
+        .stock-alert-box ul li:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="menu-container glass-container"> 
+        <h1>Menú Principal | Sistema POS (Liquid Glass)</h1>
+        
+        <div id="stockAlerts">
+            </div>
+
+        <div class="opciones-grid">
+
+            <a href="venta.html" class="menu-card card-venta">
+                <span class="icon">🛒</span>
+                <h2>Punto de Venta</h2>
+                <p>Inicia o continúa una transacción de venta. Requiere caja abierta.</p>
+            </a>
+
+            <a href="productos.html" class="menu-card card-productos">
+                <span class="icon">📦</span>
+                <h2>Gestión de Productos</h2>
+                <p>Agrega, edita y elimina artículos del inventario de Firebase Firestore.</p>
+            </a>
+
+            <a href="caja.html" class="menu-card card-caja">
+                <span class="icon">🏦</span>
+                <h2>Control de Caja</h2>
+                <p>Apertura, consulta de ventas en sesión y cierre de caja (corte).</p>
+            </a>
+
+            <a href="reportes.html" class="menu-card card-reportes">
+                <span class="icon">📈</span>
+                <h2>Reportes</h2>
+                <p>Visualiza ventas pendientes de corte e historial de cortes de caja.</p>
+            </a>
+            
+        </div>
+    </div>
+    
+    <script src="animations.js"></script>
+
+    <script type="module">
+        import { 
+            db,
+            collection,
+            getDocs,
+            query
+        } from './firebase_init.js'; 
+
+        const productosRef = collection(db, "productos");
+        const UMBRAL_STOCK_BAJO = 5; // Límite de advertencia
+
+        document.addEventListener('DOMContentLoaded', () => {
+            verificarStockBajo(); 
+        });
+
+        async function verificarStockBajo() {
+            const alertsDiv = document.getElementById('stockAlerts');
+            alertsDiv.innerHTML = '<p style="color: rgba(255, 255, 255, 0.7);">Verificando stock...</p>';
+
+            try {
+                // Consultamos todos y filtramos localmente para evitar problemas de índices en Firebase
+                const snapshot = await getDocs(productosRef);
+                const productosBajoStock = [];
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const stock = parseInt(data.stock || 0);
+
+                    if (stock <= UMBRAL_STOCK_BAJO) {
+                        productosBajoStock.push({
+                            nombre: data.nombre,
+                            stock: stock
+                        });
+                    }
+                });
+
+                renderizarAlertas(productosBajoStock);
+
+            } catch (error) {
+                console.error("Error al verificar stock:", error);
+                alertsDiv.innerHTML = `<p style="color: #ff6666;">Error al cargar inventario: ${error.message}</p>`;
+            }
+        }
+
+        function renderizarAlertas(productos) {
+            const alertsDiv = document.getElementById('stockAlerts');
+
+            if (productos.length === 0) {
+                alertsDiv.innerHTML = '<p style="color: #aaffaa; font-weight: bold;">☑️ Inventario OK. No hay alertas de stock.</p>';
+                return;
+            }
+
+            // Ordenar por stock (más bajo primero)
+            productos.sort((a, b) => a.stock - b.stock);
+
+            let htmlContent = `
+                <div class="stock-alert-box">
+                    🚨 <strong>ALERTA DE STOCK BAJO (${productos.length} productos)</strong>
+                    <p>Estos productos están en o debajo del límite de ${UMBRAL_STOCK_BAJO} unidades:</p>
+                    <ul>
+            `;
+            
+            productos.forEach(p => {
+                htmlContent += `
+                    <li>
+                        <strong>${p.nombre}</strong>: ${p.stock} unidades
+                    </li>
+                `;
+            });
+
+            htmlContent += `
+                    </ul>
+                    <p style="margin-top: 10px;">¡Acceda a Gestión de Productos para reabastecer!</p>
+                </div>
+            `;
+
+            alertsDiv.innerHTML = htmlContent;
+        }
+        
+        // ------------------------------------------------
+        // REGISTRO DEL SERVICE WORKER (PWA)
+        // ------------------------------------------------
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // CORRECCIÓN: Usar './sw.js' (ruta relativa) para solucionar el error 404
+                navigator.serviceWorker.register('./sw.js') 
+                    .then(registration => {
+                        console.log('ServiceWorker registrado con éxito:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('Fallo en el registro de ServiceWorker:', error);
+                    });
+            });
+        }
+    </script>
+
+</body>
+</html>

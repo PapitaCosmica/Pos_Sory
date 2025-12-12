@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Productos | POS Simple (Liquid Glass)</title>
+    
+    <link rel="stylesheet" href="styles.css"> 
+    
+    <style>
+        /* -------------------------------------- */
+        /* BASE Y ESTRUCTURA (Integración con Glassmorphism) */
+        /* -------------------------------------- */
+        body { 
+            /* Se usan los estilos de body de styles.css (fondo animado) */
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Alinear al inicio para la tabla */
+            min-height: 100vh;
+        }
+
+        .main-container {
+            /* Usamos la clase glass-container para el contenedor principal */
+            max-width: 1000px;
+            width: 95%;
+            padding: 30px;
+            color: #fff; /* Texto principal blanco */
+        }
+
+        h2 { 
+            color: #fff;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            font-size: 2em;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3); 
+        }
+
+        /* -------------------------------------- */
+        /* FORMULARIO Y BOTONES */
+        /* -------------------------------------- */
+        #formularioProducto {
+            /* Contenedor del formulario con un ligero toque de cristal */
+            background: rgba(255, 255, 255, 0.1); 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-radius: 10px;
+            max-width: 450px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        #formularioProducto input { 
+            /* Usamos la clase glass-input */
+            margin-bottom: 10px; 
+            width: 100%; 
+            box-sizing: border-box;
+        }
+
+        /* -------------------------------------- */
+        /* TABLA (Con transparencia) */
+        /* -------------------------------------- */
+        table { 
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            overflow: hidden; /* Para que el borde redondeado funcione bien */
+        }
+        th, td { 
+            border: 1px solid rgba(255, 255, 255, 0.3); 
+            padding: 12px; 
+            color: #fff;
+        }
+        th { 
+            background-color: rgba(0, 0, 0, 0.3); /* Encabezado más oscuro */
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.05); /* Rayado sutil */
+        }
+        
+        /* Acciones y Botones Pequeños */
+        .btn-accion { 
+            margin: 0 5px; 
+            cursor: pointer; 
+            color: #87ceeb; /* Azul claro para enlaces/acciones */
+            transition: color 0.3s;
+        }
+        .btn-accion:hover { 
+            color: #fff;
+            text-decoration: underline; 
+        }
+        
+        /* Navegación */
+        .nav-bar { 
+            margin-bottom: 20px; 
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        .nav-bar a { 
+            margin: 0 10px; 
+            text-decoration: none; 
+            color: #87ceeb; 
+            transition: color 0.3s;
+        }
+        .nav-bar a:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container glass-container">
+        
+        <div class="nav-bar">
+            <a href="index.html">Menú</a> |
+            <a href="venta.html">Venta</a> |
+            <a href="caja.html">Caja</a> |
+            <a href="reportes.html">Reportes</a>
+        </div>
+
+        <h2>📦 Gestión de Productos (Firebase)</h2>
+
+        <button id="btnNuevoProducto" class="glass-button" style="width: auto; padding: 10px 25px;">➕ Agregar Nuevo Producto</button>
+
+        <div id="formularioProducto" style="display: none;">
+            <h3>Crear/Editar Producto</h3>
+            <form id="formProducto">
+                <input type="hidden" id="doc_id" name="doc_id"> 
+                
+                Nombre: <input type="text" id="nombre" name="nombre" required class="glass-input"><br>
+                Precio de Venta: <input type="number" step="0.01" id="precio_venta" name="precio_venta" required class="glass-input"><br>
+                Stock Inicial: <input type="number" id="stock" name="stock" required class="glass-input"><br>
+                Código de Barra: <input type="text" id="codigo_barra" name="codigo_barra" class="glass-input"><br>
+                
+                <button type="submit" class="glass-button" style="width: auto;">Guardar Producto</button>
+                <button type="button" onclick="window.ocultarFormulario()" class="glass-button" style="width: auto; background-color: rgba(255, 0, 0, 0.2);">Cancelar</button>
+            </form>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID (Firestore)</th>
+                    <th>Nombre</th>
+                    <th>Precio Venta</th>
+                    <th>Stock</th>
+                    <th>Código</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tablaProductos">
+                <tr><td colspan="6">Cargando productos...</td></tr>
+            </tbody>
+        </table>
+
+        <script type="module">
+            import { 
+                db,
+                collection,
+                addDoc,
+                getDocs,
+                updateDoc,
+                deleteDoc,
+                doc
+            } from './firebase_init.js'; 
+
+            // Referencia a la colección en Firestore
+            const productosRef = collection(db, "productos");
+
+            // Exponer funciones necesarias al ámbito global para el HTML onclick
+            window.mostrarFormulario = mostrarFormulario;
+            window.ocultarFormulario = ocultarFormulario;
+            window.eliminarProducto = eliminarProducto;
+            window.editarProducto = editarProducto;
+
+
+            document.addEventListener('DOMContentLoaded', () => {
+                cargarProductos();
+
+                document.getElementById('btnNuevoProducto').addEventListener('click', mostrarFormulario);
+                document.getElementById('formProducto').addEventListener('submit', guardarProducto);
+            });
+
+            // --- FUNCIONES DE INTERFAZ ---
+
+            function mostrarFormulario() {
+                document.getElementById('doc_id').value = '';
+                document.getElementById('nombre').value = '';
+                document.getElementById('precio_venta').value = '';
+                document.getElementById('stock').value = '';
+                document.getElementById('codigo_barra').value = '';
+                document.getElementById('formularioProducto').style.display = 'block'; 
+            }
+
+            function ocultarFormulario() {
+                document.getElementById('formularioProducto').style.display = 'none';
+            }
+
+            // --- CRUD: LEER (Read) ---
+
+            async function cargarProductos() {
+                const tablaBody = document.getElementById('tablaProductos');
+                tablaBody.innerHTML = '<tr><td colspan="6">Cargando productos...</td></tr>';
+
+                try {
+                    const snapshot = await getDocs(productosRef);
+                    tablaBody.innerHTML = '';
+                    
+                    if (snapshot.empty) {
+                        tablaBody.innerHTML = '<tr><td colspan="6">No hay productos registrados en Firestore.</td></tr>';
+                        return;
+                    }
+
+                    snapshot.forEach(productoDoc => {
+                        const producto = productoDoc.data();
+                        const docId = productoDoc.id; 
+
+                        const fila = tablaBody.insertRow();
+                        fila.insertCell(0).textContent = docId;
+                        fila.insertCell(1).textContent = producto.nombre;
+                        // Usar parseFloat con valor por defecto si es necesario
+                        fila.insertCell(2).textContent = parseFloat(producto.precio_venta || 0).toFixed(2);
+                        fila.insertCell(3).textContent = producto.stock;
+                        fila.insertCell(4).textContent = producto.codigo_barra || 'N/A';
+                        
+                        const celdaAcciones = fila.insertCell(5);
+                        
+                        // JSON.stringify se usa para pasar los datos al onclick
+                        const productoDataString = JSON.stringify({
+                            docId: docId,
+                            nombre: producto.nombre,
+                            precio: producto.precio_venta,
+                            stock: producto.stock,
+                            codigo: producto.codigo_barra || ''
+                        }).replace(/"/g, '&quot;'); 
+
+                        celdaAcciones.innerHTML = `
+                            <span class="btn-accion" onclick="window.editarProducto('${productoDataString}')">✏️ Editar</span>
+                            <span class="btn-accion" onclick="window.eliminarProducto('${docId}', '${producto.nombre}')">🗑️ Eliminar</span>
+                        `;
+                    });
+                } catch (error) {
+                    console.error("Error al cargar productos:", error);
+                    tablaBody.innerHTML = `<tr><td colspan="6" style="color: red;">Error de conexión a Firestore: ${error.message}</td></tr>`;
+                }
+            }
+
+            // --- CRUD: CREAR (Create) y ACTUALIZAR (Update) ---
+
+            async function guardarProducto(event) {
+                event.preventDefault(); 
+                
+                const docId = document.getElementById('doc_id').value;
+                
+                const datosProducto = {
+                    nombre: document.getElementById('nombre').value,
+                    precio_venta: parseFloat(document.getElementById('precio_venta').value || 0),
+                    stock: parseInt(document.getElementById('stock').value || 0),
+                    codigo_barra: document.getElementById('codigo_barra').value,
+                };
+
+                try {
+                    if (docId) {
+                        // ACTUALIZAR
+                        const productoDocRef = doc(db, "productos", docId);
+                        await updateDoc(productoDocRef, datosProducto);
+                        alert(`Producto '${datosProducto.nombre}' actualizado con éxito.`);
+                    } else {
+                        // CREAR
+                        await addDoc(productosRef, datosProducto);
+                        alert(`Producto '${datosProducto.nombre}' creado con éxito.`);
+                    }
+
+                    ocultarFormulario();
+                    cargarProductos(); 
+
+                } catch (error) {
+                    console.error("Error al guardar producto:", error);
+                    alert('Error al guardar: ' + error.message);
+                }
+            }
+
+            // Función para cargar los datos en el formulario de edición
+            function editarProducto(productoJsonString) {
+                const producto = JSON.parse(productoJsonString);
+                
+                document.getElementById('doc_id').value = producto.docId;
+                document.getElementById('nombre').value = producto.nombre;
+                document.getElementById('precio_venta').value = producto.precio;
+                document.getElementById('stock').value = producto.stock;
+                document.getElementById('codigo_barra').value = producto.codigo;
+                mostrarFormulario();
+            }
+
+            // --- CRUD: ELIMINAR (Delete) ---
+
+            async function eliminarProducto(docId, nombre) {
+                if (confirm(`¿Está seguro de eliminar el producto: ${nombre}? Esta acción es irreversible.`)) {
+                    try {
+                        const productoDocRef = doc(db, "productos", docId);
+                        await deleteDoc(productoDocRef);
+                        
+                        alert(`Producto '${nombre}' eliminado con éxito.`);
+                        cargarProductos(); 
+                    } catch (error) {
+                        console.error("Error al eliminar:", error);
+                        alert('Error al eliminar: ' + error.message);
+                    }
+                }
+            }
+        </script>
+    </div>
+    <script src="animations.js"></script>
+</body>
+</html>
