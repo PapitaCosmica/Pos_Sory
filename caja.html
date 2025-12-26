@@ -3,113 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Caja | POS Simple (Liquid Glass)</title>
+    <title>Control de Caja</title>
     
     <link rel="stylesheet" href="styles.css"> 
-    
-    <style>
-        /* -------------------------------------- */
-        /* BASE Y ESTRUCTURA (Para integrarse con el CSS externo) */
-        /* -------------------------------------- */
-        body { 
-            /* Se usan los estilos de body de styles.css (fondo animado) */
-            margin: 0;
-            padding: 40px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .main-container {
-            /* Usamos la clase glass-container para el contenedor principal */
-            max-width: 650px;
-            width: 90%;
-            padding: 20px 40px;
-            color: #fff; /* Texto principal blanco */
-        }
-
-        h2 { 
-            color: #fff;
-            padding-bottom: 10px;
-            margin-bottom: 30px;
-            font-size: 2em;
-            text-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
-            border-bottom: 2px solid rgba(255, 255, 255, 0.3); 
-        }
-
-        /* -------------------------------------- */
-        /* SECCIONES DE ESTADO Y FORMULARIOS */
-        /* -------------------------------------- */
-        .seccion { 
-            /* Las secciones internas también tienen un toque de cristal */
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .abierta { 
-            /* Color de acento para la caja abierta */
-            background-color: rgba(135, 255, 135, 0.1); /* Verde suave */
-        }
-        
-        .cerrada { 
-            /* Color de acento para la caja cerrada */
-            background-color: rgba(255, 135, 135, 0.1); /* Rojo suave */
-        }
-        
-        h3 {
-            margin-top: 0;
-            color: #fff;
-            text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
-        }
-
-        label { 
-            display: block; 
-            margin-top: 15px; 
-            font-weight: bold; 
-            color: #fff;
-        }
-
-        input[type="number"], button { 
-            /* Usamos las clases de cristal definidas en styles.css */
-            width: 100%; 
-            box-sizing: border-box;
-        }
-        
-        /* Ajuste para el Input de número para usar el estilo glass-input */
-        #formAbrirCaja input, #formCerrarCaja input {
-            /* Sobrescribimos el estilo genérico de arriba con el de cristal */
-            margin-top: 5px; 
-            width: 100%;
-        }
-
-        /* Estilos de la barra de navegación */
-        .nav-bar { 
-            margin-bottom: 20px; 
-            background: rgba(0, 0, 0, 0.3);
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-            text-align: center;
-        }
-        .nav-bar a { 
-            margin: 0 10px; 
-            text-decoration: none; 
-            color: #87ceeb; /* Azul claro para enlaces */
-            transition: color 0.3s;
-        }
-        .nav-bar a:hover {
-            color: #fff;
-        }
-    </style>
 </head>
 <body>
-    <div class="main-container glass-container">
+    <div class="glass-container">
         
         <div class="nav-bar">
             <a href="index.html">Menú</a> |
@@ -118,52 +17,46 @@
             <a href="reportes.html">Reportes</a>
         </div>
 
-        <h2>🏦 Control de Caja y Cortes (Firebase)</h2>
+        <h2>🏦 Control de Caja y Cortes</h2>
 
-        <div id="estadoCaja" class="seccion">
+        <div id="estadoCaja" class="glass-panel" style="text-align: center;">
             <h3>Cargando estado...</h3>
         </div>
 
-        <div id="seccionAbrir" class="seccion cerrada" style="display: none;">
-            <h3>Abrir Nueva Sesión</h3>
+        <div id="seccionAbrir" class="glass-panel" style="display: none; max-width: 400px; margin: 0 auto;">
+            <h3 style="border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom:10px;">Abrir Nueva Sesión</h3>
             <form id="formAbrirCaja">
-                <label for="monto_inicial_abrir">Monto Inicial (Fondo):</label>
+                <label>Monto Inicial (Fondo):</label>
                 <input type="number" step="0.01" id="monto_inicial_abrir" name="monto_inicial" value="0.00" class="glass-input" required>
-                <button type="submit" class="glass-button">💰 Iniciar Caja</button>
+                <button type="submit" class="glass-button" style="width: 100%;">💰 Iniciar Caja</button>
             </form>
         </div>
 
-        <div id="seccionCerrar" class="seccion abierta" style="display: none;">
-            <h3>Cierre de Caja (Corte)</h3>
-            <p>Apertura: <strong id="cierre_fecha_apertura"></strong></p>
-            <p>Monto Inicial: $<strong id="cierre_monto_inicial"></strong></p>
-            <p>Ventas de la Sesión: $<strong id="cierre_total_vendido"></strong> (<span id="cierre_num_ventas"></span> ventas)</p>
-            <hr>
-            <p>TOTAL ESPERADO EN SISTEMA: $<strong id="cierre_total_esperado"></strong></p>
+        <div id="seccionCerrar" class="glass-panel" style="display: none; max-width: 400px; margin: 0 auto;">
+            <h3 style="border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom:10px;">Cierre de Caja (Corte)</h3>
+            
+            <div style="text-align: left; margin-bottom: 20px; font-size: 0.95em;">
+                <p>Apertura: <strong id="cierre_fecha_apertura" style="color: #aaffaa;"></strong></p>
+                <p>Monto Inicial: $<strong id="cierre_monto_inicial"></strong></p>
+                <p>Ventas de ESTA Sesión: $<strong id="cierre_total_vendido"></strong> (<span id="cierre_num_ventas"></span> ventas)</p>
+                <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.3);">
+                <p style="font-size: 1.1em;">TOTAL ESPERADO: $<strong id="cierre_total_esperado" style="color: #87ceeb;"></strong></p>
+            </div>
             
             <form id="formCerrarCaja">
                 <input type="hidden" id="cierre_doc_id" name="doc_id">
                 <input type="hidden" id="cierre_monto_sistema_hidden" name="monto_sistema">
                 <input type="hidden" id="cierre_monto_inicial_hidden" name="monto_inicial">
 
-                <label for="monto_contado_cerrar">Monto Contado Físico:</label>
-                <input type="number" step="0.01" id="monto_contado_cerrar" name="monto_contado" class="glass-input" required>
-                <button type="submit" class="glass-button">🔒 Cerrar Caja y Registrar Corte</button>
+                <label>Monto Contado Físico (Lo que hay en el cajón):</label>
+                <input type="number" step="0.01" id="monto_contado_cerrar" name="monto_contado" class="glass-input" required placeholder="0.00">
+                <button type="submit" class="glass-button glass-button-danger" style="width: 100%;">🔒 Cerrar Caja y Registrar Corte</button>
             </form>
         </div>
 
         <script type="module">
             import { 
-                db,
-                collection,
-                addDoc,
-                getDocs,
-                updateDoc,
-                doc,
-                query,
-                where,
-                orderBy,
-                limit
+                db, collection, addDoc, getDocs, updateDoc, doc, query, where, orderBy, limit 
             } from './firebase_init.js'; 
 
             const cajasRef = collection(db, "cajas");
@@ -175,72 +68,147 @@
                 document.getElementById('formCerrarCaja').addEventListener('submit', cerrarCaja);
             });
 
-            // --- 1. VERIFICAR ESTADO Y CALCULAR VENTAS ---
+            // --- FUNCIÓN CLAVE: CONVERTIR TEXTO A FECHA PARA COMPARAR ---
+            function parsearFecha(fechaStr) {
+                // Formato esperado: "25/12/2025, 8:15:51 p.m." (o similar según tu navegador)
+                try {
+                    // Limpiamos un poco el string por si acaso
+                    if (!fechaStr) return new Date(0); // Fecha muy antigua si es nulo
+                    
+                    // Si el navegador guardó ISO string (ej: 2025-12-25T20:15:00...), es fácil
+                    if (fechaStr.includes('T')) return new Date(fechaStr);
+
+                    // Si es formato local (con barras y comas)
+                    // Esta es una aproximación robusta para formato dd/mm/yyyy
+                    const partes = fechaStr.split(','); // Separar fecha de hora
+                    const fechaPartes = partes[0].trim().split('/');
+                    
+                    if (fechaPartes.length !== 3) return new Date(fechaStr); // Intentar nativo si falla split
+
+                    const dia = parseInt(fechaPartes[0]);
+                    const mes = parseInt(fechaPartes[1]) - 1; // Meses en JS son 0-11
+                    const anio = parseInt(fechaPartes[2]);
+
+                    // Manejo básico de hora si es necesario, pero para comparar ventas vs apertura
+                    // la fecha y hora son vitales. Vamos a confiar en el constructor nativo primero
+                    // porque el formato local depende de TU navegador.
+                    
+                    // MEJOR ESTRATEGIA: Convertir el string local a objeto Date directamente
+                    // ya que se guardó con .toLocaleString() en la misma máquina/región.
+                    return new Date(Date.parse(fechaStr.replace('p. m.', 'PM').replace('a. m.', 'AM')));
+                    
+                } catch (e) {
+                    console.error("Error al parsear fecha:", fechaStr, e);
+                    return new Date(0);
+                }
+            }
+            // -----------------------------------------------------------
 
             async function verificarEstadoCaja() {
                 const estadoDiv = document.getElementById('estadoCaja');
                 estadoDiv.innerHTML = '<h3>Cargando estado...</h3>';
                 
                 try {
-                    // Buscar la última caja que no tenga fecha_cierre (esté abierta)
+                    // 1. Buscar caja ABIERTA
                     const q = query(cajasRef, where("fecha_cierre", "==", null), orderBy("fecha_apertura", "desc"), limit(1));
                     const snapshotCaja = await getDocs(q);
                     
                     if (snapshotCaja.empty) {
-                        // CAJA CERRADA
                         mostrarSeccionCajaCerrada();
                         return;
                     }
                     
-                    // CAJA ABIERTA: Obtenemos el único documento
                     const cajaDoc = snapshotCaja.docs[0];
                     const cajaData = cajaDoc.data();
                     const cajaDocId = cajaDoc.id;
 
-                    // 2. CALCULAR VENTAS desde la apertura de esta caja
-                    // Las ventas sin id_corte asignado pertenecen a esta sesión
+                    // FECHA REAL DE APERTURA (Convertida a objeto para comparar)
+                    // Usamos Date.parse directo porque toLocaleString suele ser compatible con el mismo navegador
+                    // Pero limpiamos el formato AM/PM por si acaso chrome lo pone en español
+                    let fechaAperturaObj = new Date(cajaData.fecha_apertura_iso || new Date().toISOString()); 
+                    
+                    // Si no guardaste fecha_apertura_iso antes, intentamos parsear el string
+                    if (!cajaData.fecha_apertura_iso) {
+                        // Fallback crítico: Tratamos de interpretar el string guardado
+                        const rawDate = cajaData.fecha_apertura.replace(/\./g, '').toUpperCase(); // Quitar puntos de p.m.
+                        fechaAperturaObj = new Date(rawDate);
+                        
+                        // Si da fecha inválida, usamos la hora actual para no bloquear, pero avisamos
+                        if (isNaN(fechaAperturaObj)) {
+                            console.warn("Fecha inválida, asumiendo todas las ventas huérfanas son de hoy.");
+                            fechaAperturaObj = new Date(0); // Aceptará todo
+                        }
+                    }
+
+                    // 2. BUSCAR VENTAS SIN CORTE
                     const qVentas = query(ventasRef, where("id_corte", "==", null));
                     const snapshotVentas = await getDocs(qVentas);
 
                     let totalVendido = 0;
+                    let numVentas = 0;
+
                     snapshotVentas.forEach(doc => {
-                        // Asegurarse de que el total_venta es un número antes de sumar
-                        totalVendido += parseFloat(doc.data().total_venta || 0);
+                        const ventaData = doc.data();
+                        
+                        // --- AQUÍ ESTÁ EL FILTRO MÁGICO ---
+                        // Solo sumamos si la fecha de la venta es MAYOR a la apertura de la caja
+                        let fechaVentaObj;
+                        if (ventaData.fecha_iso) {
+                             fechaVentaObj = new Date(ventaData.fecha_iso);
+                        } else {
+                             // Fallback para datos viejos
+                             const rawVenta = (ventaData.fecha_hora || "").replace(/\./g, '').toUpperCase();
+                             fechaVentaObj = new Date(rawVenta);
+                        }
+
+                        // Comparamos timestamps
+                        if (!isNaN(fechaVentaObj) && !isNaN(fechaAperturaObj)) {
+                            if (fechaVentaObj >= fechaAperturaObj) {
+                                totalVendido += parseFloat(ventaData.total_venta || 0);
+                                numVentas++;
+                            }
+                        } else {
+                            // Si no podemos comparar fechas, sumamos por defecto (comportamiento viejo)
+                            // o lo ignoramos. Mejor sumar para no perder dinero.
+                            totalVendido += parseFloat(ventaData.total_venta || 0);
+                            numVentas++;
+                        }
                     });
 
                     const montoInicial = parseFloat(cajaData.monto_inicial || 0);
                     const totalEsperado = montoInicial + totalVendido;
 
-                    // RENDERIZAR CAJA ABIERTA
-                    renderizarCajaAbierta(cajaDocId, cajaData, totalVendido, totalEsperado, snapshotVentas.size);
+                    renderizarCajaAbierta(cajaDocId, cajaData, totalVendido, totalEsperado, numVentas);
 
                 } catch (error) {
-                    console.error("Error al verificar estado:", error);
-                    estadoDiv.innerHTML = `<p style="color:red;">Error de conexión a Firebase: ${error.message}</p>`;
+                    console.error(error);
+                    estadoDiv.innerHTML = `<p style="color:#ff6666;">Error: ${error.message}</p>`;
                 }
             }
             
             function mostrarSeccionCajaCerrada() {
-                document.getElementById('estadoCaja').className = 'seccion cerrada';
-                document.getElementById('estadoCaja').innerHTML = `<h3>❌ Caja Cerrada</h3><p>No hay una caja abierta. Debe iniciar una sesión.</p>`;
+                const estadoDiv = document.getElementById('estadoCaja');
+                estadoDiv.style.background = "rgba(255, 100, 100, 0.2)";
+                estadoDiv.style.border = "1px solid rgba(255, 100, 100, 0.4)";
+                estadoDiv.innerHTML = `<h3>❌ Caja Cerrada</h3><p>No hay sesión activa. Inicia caja para vender.</p>`;
+                
                 document.getElementById('seccionAbrir').style.display = 'block';
                 document.getElementById('seccionCerrar').style.display = 'none';
             }
 
             function renderizarCajaAbierta(docId, data, vendido, esperado, numVentas) {
                 const estadoDiv = document.getElementById('estadoCaja');
-                estadoDiv.className = 'seccion abierta';
-                estadoDiv.innerHTML = `<h3>✅ Caja Abierta</h3>
-                    <p>Sesión ID: <strong>${docId}</strong></p>
-                    <p>Abierta desde: <strong>${data.fecha_apertura}</strong></p>
-                    <p>Vendido hoy: <strong>$${vendido.toFixed(2)}</strong></p>
-                    <p>Total Esperado: <strong>$${esperado.toFixed(2)}</strong></p>
+                estadoDiv.style.background = "rgba(100, 255, 100, 0.2)"; // Verde suave
+                estadoDiv.style.border = "1px solid rgba(100, 255, 100, 0.4)";
+                
+                estadoDiv.innerHTML = `
+                    <h3 style="margin-bottom:5px;">✅ Caja Abierta</h3>
+                    <small>ID: ${docId}</small>
                 `;
 
                 document.getElementById('seccionAbrir').style.display = 'none';
                 document.getElementById('seccionCerrar').style.display = 'block';
 
-                // Llenar datos de cierre
                 document.getElementById('cierre_doc_id').value = docId;
                 document.getElementById('cierre_fecha_apertura').textContent = data.fecha_apertura;
                 document.getElementById('cierre_monto_inicial').textContent = parseFloat(data.monto_inicial || 0).toFixed(2);
@@ -248,102 +216,91 @@
                 document.getElementById('cierre_num_ventas').textContent = numVentas;
                 document.getElementById('cierre_total_esperado').textContent = esperado.toFixed(2);
                 
-                // Campos ocultos para enviar al cierre
                 document.getElementById('cierre_monto_sistema_hidden').value = esperado.toFixed(2);
                 document.getElementById('cierre_monto_inicial_hidden').value = parseFloat(data.monto_inicial || 0).toFixed(2);
             }
 
-
-            // --- 2. ABRIR CAJA (CREATE) ---
-
+            // --- ABRIR CAJA ---
             async function abrirCaja(event) {
                 event.preventDefault();
                 const montoInicial = parseFloat(document.getElementById('monto_inicial_abrir').value || 0);
                 
-                if (await obtenerCajaAbiertaDirecta()) {
-                    alert("Ya existe una caja abierta.");
-                    return;
-                }
-
+                // Obtenemos fechas
+                const ahora = new Date();
+                
                 try {
                     const nuevaCaja = {
                         nombre_caja: 'Caja Principal',
                         monto_inicial: montoInicial,
-                        // Usamos un timestamp de Firestore para la apertura
-                        fecha_apertura: new Date().toLocaleString(), 
-                        fecha_cierre: null, // Marca la caja como abierta
-                        cortes: [] // Almacenará los cortes dentro de la sesión de caja
+                        fecha_apertura: ahora.toLocaleString(), // Para mostrar
+                        fecha_apertura_iso: ahora.toISOString(), // IMPORTANTE: Para comparar matemáticamente
+                        fecha_cierre: null,
+                        cortes: [] 
                     };
 
                     await addDoc(cajasRef, nuevaCaja);
-                    alert(`Caja abierta con éxito. Monto inicial: $${montoInicial.toFixed(2)}`);
+                    alert(`Caja abierta con éxito. Fondo: $${montoInicial.toFixed(2)}`);
                     verificarEstadoCaja(); 
 
                 } catch (error) {
-                    console.error("Error al abrir caja:", error);
-                    alert('Error al abrir caja: ' + error.message);
+                    alert('Error: ' + error.message);
                 }
             }
-            
-            // Función auxiliar para obtener rápidamente el estado
-            async function obtenerCajaAbiertaDirecta() {
-                const q = query(cajasRef, where("fecha_cierre", "==", null), limit(1));
-                const snapshot = await getDocs(q);
-                return !snapshot.empty;
-            }
 
-
-            // --- 3. CERRAR CAJA (UPDATE) ---
-
+            // --- CERRAR CAJA ---
             async function cerrarCaja(event) {
                 event.preventDefault();
-                
                 const docId = document.getElementById('cierre_doc_id').value;
                 const montoContado = parseFloat(document.getElementById('monto_contado_cerrar').value || 0);
                 const montoSistema = parseFloat(document.getElementById('cierre_monto_sistema_hidden').value || 0);
                 const montoInicial = parseFloat(document.getElementById('cierre_monto_inicial_hidden').value || 0);
 
-                if (!docId) {
-                    alert("Error: No se encontró la sesión de caja activa.");
-                    return;
-                }
+                if (!confirm(`Sistema espera: $${montoSistema}. ¿Cerrar con físico: $${montoContado}?`)) return;
 
-                if (!confirm(`Total Esperado: $${montoSistema.toFixed(2)}. ¿Desea confirmar el cierre de caja con $${montoContado.toFixed(2)} contado?`)) {
-                    return;
-                }
+                const ahora = new Date();
 
                 try {
-                    // 1. Registrar el Corte
+                    // 1. Marcar las ventas de esta sesión como "cortadas"
+                    // Buscamos las mismas ventas que usamos para calcular el total
+                    // NOTA: Para ser precisos, deberíamos buscar por fecha también, 
+                    // pero al asignar id_corte, las "limpiamos" para la siguiente caja.
+                    
+                    const qVentasPendientes = query(ventasRef, where("id_corte", "==", null));
+                    const snapshot = await getDocs(qVentasPendientes);
+                    
+                    // Actualizamos todas las ventas pendientes con el ID de este corte/caja
+                    const updatePromises = [];
+                    snapshot.forEach(docVenta => {
+                        // Opcional: Verificar fecha de nuevo aquí si queremos ser muy estrictos
+                        updatePromises.push(updateDoc(doc(db, "ventas", docVenta.id), { id_corte: docId }));
+                    });
+                    await Promise.all(updatePromises);
+
+                    // 2. Registrar el corte en la caja
                     const corte = {
-                        fecha_corte: new Date().toLocaleString(),
+                        fecha_corte: ahora.toLocaleString(),
+                        fecha_corte_iso: ahora.toISOString(),
                         monto_inicial: montoInicial,
                         monto_sistema: montoSistema,
                         monto_contado: montoContado,
                         desfase: montoContado - montoSistema
                     };
                     
-                    // 2. Cerrar la Caja y guardar el Corte
-                    const cajaDocRef = doc(db, "cajas", docId);
-                    await updateDoc(cajaDocRef, {
+                    await updateDoc(doc(db, "cajas", docId), {
                         fecha_cierre: corte.fecha_corte,
-                        // Agregar el corte al historial dentro del documento de caja
+                        fecha_cierre_iso: corte.fecha_corte_iso,
                         cortes: [corte] 
                     });
-                    
-                    // 3. Opcional: Podríamos actualizar todas las ventas sin corte aquí,
-                    // pero por simplicidad, la lógica de *estado* asume que las ventas sin id_corte
-                    // pertenecen a la última caja cerrada. No necesitamos actualizar la venta aquí.
 
-                    alert(`Cierre de Caja exitoso. Desfase: $${corte.desfase.toFixed(2)}`);
+                    alert(`Caja cerrada. Desfase: $${corte.desfase.toFixed(2)}`);
                     verificarEstadoCaja();
 
                 } catch (error) {
-                    console.error("Error al cerrar caja:", error);
-                    alert('Error al cerrar caja: ' + error.message);
+                    console.error(error);
+                    alert('Error al cerrar: ' + error.message);
                 }
             }
         </script>
     </div>
-    <script src="animations.js"></script>
 </body>
 </html>
