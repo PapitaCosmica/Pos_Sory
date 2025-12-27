@@ -3,20 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reportes de Ventas</title>
-    
+    <title>Reportes Semanales | POS Sory</title>
     <link rel="stylesheet" href="styles.css"> 
-    
     <style>
-        /* Estilos específicos mínimos (el resto viene de styles.css) */
-        .estado-positivo { color: #aaffaa; font-weight: bold; }
-        .estado-negativo { color: #ff6666; font-weight: bold; }
-        .estado-neutro { color: #87ceeb; font-weight: bold; }
+        .filtros-container {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .paginacion-semanal {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 8px;
+        }
+        .estado-positivo { color: #aaffaa; }
+        .estado-negativo { color: #ff6666; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
     </style>
 </head>
 <body>
-    <div class="glass-container">
-        
+    <div class="glass-container" style="max-width: 1100px;">
         <div class="nav-bar">
             <a href="index.html">Menú</a> |
             <a href="venta.html">Venta</a> |
@@ -24,187 +36,161 @@
             <a href="caja.html">Caja</a>
         </div>
 
-        <h2>📊 Reportes de Ventas y Cortes</h2>
+        <h2>📊 Reportes Semanales</h2>
+
+        <div class="filtros-container">
+            <div class="paginacion-semanal">
+                <button id="btnSemanaAnt" class="glass-button" style="width: auto; margin:0;">⬅️ Semana Anterior</button>
+                <div style="text-align: center; min-width: 200px;">
+                    <span id="rangoFechas" style="font-weight: bold; font-size: 0.9em;">Cargando semana...</span>
+                </div>
+                <button id="btnSemanaSig" class="glass-button" style="width: auto; margin:0;">Siguiente ➡️</button>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <span>Ir a:</span>
+                <input type="date" id="filtroFecha" class="glass-input" style="width: auto; margin-bottom: 0;">
+            </div>
+        </div>
 
         <div class="glass-panel">
-            <h3>Ventas en la Sesión Actual (Sin Corte)</h3>
-            <p>Total vendido en esta sesión: $<strong id="totalVendidoHoy" style="color: #aaffaa; font-size: 1.2em;">0.00</strong></p>
-            <div style="overflow-x: auto;">
-                <table id="tablaVentasHoy">
-                    <thead>
-                        <tr>
-                            <th>Fecha/Hora</th>
-                            <th>Total</th>
-                            <th>Pago</th>
-                            <th>ID Venta</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="4" style="text-align: center;">Cargando...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+            <h3>Ventas del Periodo</h3>
+            <p>Total vendido en esta semana: $<strong id="totalVendido" style="color: #aaffaa; font-size: 1.2em;">0.00</strong></p>
+            <table id="tablaVentas">
+                <thead>
+                    <tr>
+                        <th>Fecha/Hora</th>
+                        <th>Total</th>
+                        <th>Pago</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyVentas">
+                    <tr><td colspan="3" style="text-align:center;">Cargando...</td></tr>
+                </tbody>
+            </table>
         </div>
         
         <div class="glass-panel">
-            <h3>Historial de Cortes de Caja</h3>
-            <div style="overflow-x: auto;">
-                <table id="tablaCortes">
-                    <thead>
-                        <tr>
-                            <th>Fecha Corte</th>
-                            <th>Monto Inicial</th>
-                            <th>Esperado</th>
-                            <th>Real (Contado)</th>
-                            <th>Desfase</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="5" style="text-align: center;">Cargando historial...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+            <h3>Cortes de Caja del Periodo</h3>
+            <table id="tablaCortes">
+                <thead>
+                    <tr>
+                        <th>Fecha Cierre</th>
+                        <th>Sistema</th>
+                        <th>Contado</th>
+                        <th>Diferencia</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyCortes">
+                    <tr><td colspan="4" style="text-align:center;">Cargando...</td></tr>
+                </tbody>
+            </table>
         </div>
 
         <script type="module">
-            import { 
-                db, collection, getDocs, query, where, orderBy, limit 
-            } from './firebase_init.js'; 
+            import { db, collection, getDocs, query, orderBy, where } from './firebase_init.js'; 
 
-            const ventasRef = collection(db, "ventas");
-            const cajasRef = collection(db, "cajas");
+            let fechaReferencia = new Date(); // Fecha actual para empezar
+            let todasLasVentas = [];
+            let todosLosCortes = [];
 
             document.addEventListener('DOMContentLoaded', () => {
-                cargarReporteVentasHoy();
-                cargarHistorialCortes();
+                actualizarRangoYDatos();
+                document.getElementById('btnSemanaAnt').addEventListener('click', () => moverSemana(-7));
+                document.getElementById('btnSemanaSig').addEventListener('click', () => moverSemana(7));
+                document.getElementById('filtroFecha').addEventListener('change', (e) => {
+                    fechaReferencia = new Date(e.target.value + "T00:00:00");
+                    actualizarRangoYDatos();
+                });
             });
-            
-            // --- FUNCIÓN DE FECHAS (IGUAL QUE EN CAJA.HTML) ---
-            function parsearFecha(fechaStr) {
-                try {
-                    if (!fechaStr) return new Date(0);
-                    if (fechaStr.includes('T')) return new Date(fechaStr);
-                    // Intento de parseo local robusto
-                    return new Date(Date.parse(fechaStr.replace('p. m.', 'PM').replace('a. m.', 'AM')));
-                } catch (e) {
-                    return new Date(0);
-                }
+
+            function moverSemana(dias) {
+                fechaReferencia.setDate(fechaReferencia.getDate() + dias);
+                actualizarRangoYDatos();
             }
 
-            // --- 1. CARGAR VENTAS DE LA SESIÓN ACTUAL (FILTRADAS) ---
+            async function actualizarRangoYDatos() {
+                // Calcular inicio (hace 7 días) y fin (hoy) respecto a la referencia
+                const fin = new Date(fechaReferencia);
+                const inicio = new Date(fechaReferencia);
+                inicio.setDate(fin.getDate() - 7);
 
-            async function cargarReporteVentasHoy() {
-                const tablaBody = document.querySelector('#tablaVentasHoy tbody');
-                const totalLabel = document.getElementById('totalVendidoHoy');
+                const opciones = { day: '2-digit', month: '2-digit', year: 'numeric' };
+                document.getElementById('rangoFechas').textContent = `${inicio.toLocaleDateString('es-MX', opciones)} al ${fin.toLocaleDateString('es-MX', opciones)}`;
                 
-                try {
-                    // 1. Obtener la Caja Abierta para saber DESDE CUÁNDO sumar
-                    const qCaja = query(cajasRef, where("fecha_cierre", "==", null), limit(1));
-                    const snapCaja = await getDocs(qCaja);
+                // Deshabilitar botón "Siguiente" si ya estamos en la fecha actual
+                const hoy = new Date();
+                document.getElementById('btnSemanaSig').disabled = fin >= hoy;
 
-                    if (snapCaja.empty) {
-                        totalLabel.textContent = "0.00 (Caja Cerrada)";
-                        tablaBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No hay caja abierta. Inicia sesión para ver ventas actuales.</td></tr>';
-                        return;
-                    }
-
-                    const cajaData = snapCaja.docs[0].data();
-                    
-                    // Obtener fecha de apertura segura
-                    let fechaApertura = new Date(cajaData.fecha_apertura_iso || 0);
-                    if (fechaApertura.getTime() === 0) {
-                         // Fallback para cajas viejas
-                         fechaApertura = parsearFecha(cajaData.fecha_apertura);
-                    }
-
-                    // 2. Traer ventas pendientes
-                    const qVentas = query(ventasRef, where("id_corte", "==", null), orderBy("fecha_hora", "desc"));
-                    const snapshotVentas = await getDocs(qVentas);
-                    
-                    tablaBody.innerHTML = '';
-                    let totalVendido = 0;
-                    let ventasEncontradas = 0;
-
-                    snapshotVentas.forEach(doc => {
-                        const venta = doc.data();
-                        
-                        // FILTRO DE FECHA: Solo mostrar si es posterior a la apertura
-                        let fechaVenta = new Date(venta.fecha_iso || 0);
-                        if (fechaVenta.getTime() === 0) fechaVenta = parsearFecha(venta.fecha_hora);
-
-                        // Si la venta es válida y es posterior o igual a la apertura
-                        if (fechaVenta >= fechaApertura) {
-                            const total = parseFloat(venta.total_venta || 0); 
-                            totalVendido += total;
-                            ventasEncontradas++;
-
-                            const fila = tablaBody.insertRow();
-                            fila.insertCell(0).textContent = venta.fecha_hora;
-                            fila.insertCell(1).textContent = `$${total.toFixed(2)}`;
-                            fila.insertCell(2).textContent = venta.tipo_pago;
-                            fila.insertCell(3).textContent = doc.id.substring(0, 8) + '...'; // ID corto
-                        }
-                    });
-
-                    if (ventasEncontradas === 0) {
-                        tablaBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No hay ventas en esta sesión aún.</td></tr>';
-                    }
-                    
-                    totalLabel.textContent = totalVendido.toFixed(2);
-
-                } catch (error) {
-                    console.error('Error:', error);
-                    tablaBody.innerHTML = `<tr><td colspan="4" style="color: #ff6666;">Error: ${error.message}</td></tr>`;
-                }
+                await descargarDatos(inicio, fin);
             }
 
-            // --- 2. CARGAR HISTORIAL DE CORTES ---
-            
-            async function cargarHistorialCortes() {
-                const tablaBody = document.querySelector('#tablaCortes tbody');
-                
+            async function descargarDatos(fInicio, fFin) {
+                const bodyV = document.getElementById('bodyVentas');
+                const bodyC = document.getElementById('bodyCortes');
+                bodyV.innerHTML = '<tr><td colspan="3" style="text-align:center;">Buscando ventas...</td></tr>';
+                bodyC.innerHTML = '<tr><td colspan="4" style="text-align:center;">Buscando cortes...</td></tr>';
+
                 try {
-                    // Traemos las cajas cerradas (que tienen fecha_cierre)
-                    const qCortes = query(cajasRef, where("fecha_cierre", "!=", null), orderBy("fecha_cierre", "desc"), limit(20)); // Limite 20 para no saturar
-                    const snapshotCortes = await getDocs(qCortes);
-                    
-                    tablaBody.innerHTML = '';
-                    
-                    if (snapshotCortes.empty) {
-                        tablaBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No hay cortes registrados.</td></tr>';
-                        return;
-                    }
-                    
-                    snapshotCortes.forEach(cajaDoc => {
-                        const data = cajaDoc.data();
-                        // Tomamos el último corte registrado en el array
-                        const corte = data.cortes && data.cortes.length > 0 ? data.cortes[data.cortes.length - 1] : null; 
+                    // Descargamos todo y filtramos localmente por simplicidad de formato de fecha
+                    const vSnap = await getDocs(query(collection(db, "ventas"), orderBy("fecha_hora", "desc")));
+                    const cSnap = await getDocs(query(collection(db, "cajas"), where("fecha_cierre", "!=", null), orderBy("fecha_cierre", "desc")));
 
-                        if (corte) {
-                            const montoInicial = parseFloat(corte.monto_inicial || 0);
-                            const montoSistema = parseFloat(corte.monto_sistema || 0);
-                            const montoContado = parseFloat(corte.monto_contado || 0);
-                            const desfase = montoContado - montoSistema;
-                            
-                            const fila = tablaBody.insertRow();
-                            fila.insertCell(0).textContent = corte.fecha_corte;
-                            fila.insertCell(1).textContent = `$${montoInicial.toFixed(2)}`;
-                            fila.insertCell(2).textContent = `$${montoSistema.toFixed(2)}`;
-                            fila.insertCell(3).textContent = `$${montoContado.toFixed(2)}`;
-                            
-                            // Colorear desfase
-                            let claseColor = 'estado-neutro';
-                            if (desfase > 0) claseColor = 'estado-positivo'; // Sobró dinero
-                            if (desfase < -0.5) claseColor = 'estado-negativo'; // Faltó dinero (margen de 50 centavos)
-
-                            fila.insertCell(4).innerHTML = `<span class="${claseColor}">$${desfase.toFixed(2)}</span>`;
-                        }
+                    // Filtrado Lógico por Rango de Fechas
+                    const ventasFiltradas = vSnap.docs.map(d => d.data()).filter(v => {
+                        const f = parsearFecha(v.fecha_iso || v.fecha_hora);
+                        return f >= fInicio && f <= fFin;
                     });
-                    
-                } catch (error) {
-                    console.error('Error historial:', error);
-                    tablaBody.innerHTML = `<tr><td colspan="5" style="color: #ff6666;">Error: ${error.message}</td></tr>`;
-                }
+
+                    const cortesFiltrados = cSnap.docs.map(d => d.data()).filter(c => {
+                        const f = parsearFecha(c.fecha_cierre_iso || c.fecha_cierre);
+                        return f >= fInicio && f <= fFin;
+                    });
+
+                    renderizarVentas(ventasFiltradas);
+                    renderizarCortes(cortesFiltrados);
+                } catch (e) { console.error(e); }
+            }
+
+            function parsearFecha(str) {
+                if(!str) return new Date(0);
+                if(str.includes('T')) return new Date(str);
+                // Intento de parseo manual para el formato local dd/mm/yyyy
+                const partes = str.split(',')[0].split('/');
+                if(partes.length === 3) return new Date(partes[2], partes[1]-1, partes[0]);
+                return new Date(str);
+            }
+
+            function renderizarVentas(lista) {
+                const tbody = document.getElementById('bodyVentas');
+                const totalTxt = document.getElementById('totalVendido');
+                tbody.innerHTML = '';
+                let suma = 0;
+
+                lista.forEach(v => {
+                    suma += parseFloat(v.total_venta || 0);
+                    const fila = tbody.insertRow();
+                    fila.innerHTML = `<td>${v.fecha_hora}</td><td>$${parseFloat(v.total_venta).toFixed(2)}</td><td>${v.tipo_pago}</td>`;
+                });
+                totalTxt.textContent = suma.toFixed(2);
+                if(lista.length === 0) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No hay ventas en esta semana</td></tr>';
+            }
+
+            function renderizarCortes(lista) {
+                const tbody = document.getElementById('bodyCortes');
+                tbody.innerHTML = '';
+                lista.forEach(c => {
+                    const corte = c.cortes[0];
+                    const desfase = (corte.monto_contado || 0) - (corte.monto_sistema || 0);
+                    const fila = tbody.insertRow();
+                    fila.innerHTML = `
+                        <td>${c.fecha_cierre}</td>
+                        <td>$${parseFloat(corte.monto_sistema).toFixed(2)}</td>
+                        <td>$${parseFloat(corte.monto_contado).toFixed(2)}</td>
+                        <td class="${desfase < 0 ? 'estado-negativo' : 'estado-positivo'}">$${desfase.toFixed(2)}</td>
+                    `;
+                });
+                if(lista.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Sin cortes en esta semana</td></tr>';
             }
         </script>
     </div>

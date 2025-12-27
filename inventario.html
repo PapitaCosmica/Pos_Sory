@@ -6,12 +6,24 @@
     <title>Pre-Inventario | POS Sory</title>
     <link rel="stylesheet" href="styles.css">
     <style>
+        /* Estilos para los estados de stock */
         .stock-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
         .stock-bien { background: rgba(40, 167, 69, 0.7); }
         .stock-bajo { background: rgba(255, 193, 7, 0.8); color: #212529; }
         .stock-nulo { background: rgba(220, 53, 69, 0.7); }
-        .diferencia-alerta { color: #ff6666; animation: blink 2s infinite; }
+        
+        .diferencia-alerta { color: #ff6666; animation: blink 2s infinite; font-weight: bold; }
         @keyframes blink { 50% { opacity: 0.5; } }
+
+        /* Estilos para paginación */
+        .paginacion-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .btn-pag { width: auto; padding: 8px 15px; min-width: 100px; }
     </style>
 </head>
 <body>
@@ -23,11 +35,12 @@
             <a href="reportes.html">Reportes</a>
         </div>
 
-        <h2>📋 Auditoría de Inventario</h2>
+        <h2>📋 Auditoría de Inventario (Pre-Inventario)</h2>
 
-        <div class="glass-panel" style="display: flex; gap: 15px; align-items: center;">
-            <input type="text" id="buscadorInventario" class="glass-input" placeholder="🔍 Buscar producto..." style="margin-bottom: 0;">
-            <button id="btnGuardarInventario" class="glass-button" style="width: auto; background: rgba(0, 123, 255, 0.4);">
+        <div class="glass-panel" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+            <input type="text" id="buscadorInventario" class="glass-input" placeholder="🔍 Buscar por nombre o categoría..." style="margin-bottom: 0; flex: 1;">
+            
+            <button id="btnGuardarInventario" class="glass-button" style="width: auto; margin-top: 0; background: rgba(0, 123, 255, 0.4);">
                 💾 Guardar Conteo
             </button>
         </div>
@@ -36,7 +49,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Producto</th>
+                        <th>Producto / Cat.</th>
                         <th>Estado</th>
                         <th>Sistema</th>
                         <th>Físico</th>
@@ -44,9 +57,15 @@
                     </tr>
                 </thead>
                 <tbody id="tablaInventario">
-                    <tr><td colspan="5" style="text-align:center;">Cargando...</td></tr>
+                    <tr><td colspan="5" style="text-align:center;">Cargando productos...</td></tr>
                 </tbody>
             </table>
+        </div>
+
+        <div class="paginacion-container">
+            <button id="btnAnt" class="glass-button btn-pag">⬅️ Anterior</button>
+            <span id="infoPag" style="font-weight: bold;">Página 1</span>
+            <button id="btnSig" class="glass-button btn-pag">Siguiente ➡️</button>
         </div>
     </div>
 
@@ -56,42 +75,87 @@
         } from './firebase_init.js'; 
 
         const productosRef = collection(db, "productos");
-        const auditoriaRef = collection(db, "inventario_auditoria"); // Nueva colección
+        const auditoriaRef = collection(db, "inventario_auditoria");
+
+        let productosMemoria = [];
+        let productosFiltrados = [];
+        let paginaActual = 1;
+        const itemsPorPagina = 10;
 
         document.addEventListener('DOMContentLoaded', () => {
             cargarInventario();
             document.getElementById('buscadorInventario').addEventListener('input', filtrarInventario);
             document.getElementById('btnGuardarInventario').addEventListener('click', guardarConteo);
+            document.getElementById('btnAnt').addEventListener('click', () => cambiarPagina(-1));
+            document.getElementById('btnSig').addEventListener('click', () => cambiarPagina(1));
         });
 
         async function cargarInventario() {
-            const tabla = document.getElementById('tablaInventario');
             try {
                 const snapshot = await getDocs(query(productosRef, orderBy("nombre", "asc")));
-                tabla.innerHTML = '';
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const stock = parseInt(data.stock || 0);
-                    
-                    let clase = "stock-bien";
-                    if (stock <= 0) clase = "stock-nulo";
-                    else if (stock <= 5) clase = "stock-bajo";
-
-                    const fila = tabla.insertRow();
-                    fila.dataset.id = doc.id;
-                    fila.dataset.nombre = data.nombre;
-                    fila.innerHTML = `
-                        <td><strong>${data.nombre}</strong></td>
-                        <td><span class="stock-badge ${clase}">${stock <= 0 ? 'Agotado' : 'Disponible'}</span></td>
-                        <td style="text-align:center;">${stock}</td>
-                        <td>
-                            <input type="number" class="glass-input input-fisico" style="width:80px; margin-bottom:0;" 
-                                   placeholder="0" oninput="window.calcularDiferencia(this, ${stock})">
-                        </td>
-                        <td class="diff-val" style="text-align:center; font-weight:bold;">-</td>
-                    `;
-                });
+                productosMemoria = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                productosFiltrados = [...productosMemoria];
+                renderizarTabla();
             } catch (e) { console.error(e); }
+        }
+
+        function renderizarTabla() {
+            const tabla = document.getElementById('tablaInventario');
+            tabla.innerHTML = '';
+
+            const inicio = (paginaActual - 1) * itemsPorPagina;
+            const fin = inicio + itemsPorPagina;
+            const totalPaginas = Math.ceil(productosFiltrados.length / itemsPorPagina) || 1;
+            const dataPagina = productosFiltrados.slice(inicio, fin);
+
+            dataPagina.forEach(p => {
+                const stock = parseInt(p.stock || 0);
+                let clase = "stock-bien";
+                if (stock <= 0) clase = "stock-nulo";
+                else if (stock <= 5) clase = "stock-bajo";
+
+                const fila = tabla.insertRow();
+                fila.dataset.id = p.id;
+                fila.dataset.nombre = p.nombre;
+                fila.innerHTML = `
+                    <td>
+                        <strong>${p.nombre}</strong><br>
+                        <small style="opacity:0.7">${p.categoria || 'Sin categoría'}</small>
+                    </td>
+                    <td><span class="stock-badge ${clase}">${stock <= 0 ? 'Agotado' : 'Disponible'}</span></td>
+                    <td style="text-align:center;">${stock}</td>
+                    <td>
+                        <input type="number" class="glass-input input-fisico" style="width:80px; margin-bottom:0;" 
+                               placeholder="0" oninput="window.calcularDiferencia(this, ${stock})">
+                    </td>
+                    <td class="diff-val" style="text-align:center; font-weight:bold;">-</td>
+                `;
+            });
+
+            // Actualizar info de página
+            document.getElementById('infoPag').textContent = `Página ${paginaActual} de ${totalPaginas}`;
+            document.getElementById('btnAnt').disabled = paginaActual === 1;
+            document.getElementById('btnSig').disabled = paginaActual >= totalPaginas;
+
+            if (productosFiltrados.length === 0) {
+                tabla.innerHTML = '<tr><td colspan="5" style="text-align:center;">No se encontraron productos</td></tr>';
+            }
+        }
+
+        function cambiarPagina(dir) {
+            paginaActual += dir;
+            renderizarTabla();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function filtrarInventario(e) {
+            const t = e.target.value.toLowerCase().trim();
+            productosFiltrados = productosMemoria.filter(p => 
+                p.nombre.toLowerCase().includes(t) || 
+                (p.categoria && p.categoria.toLowerCase().includes(t))
+            );
+            paginaActual = 1;
+            renderizarTabla();
         }
 
         window.calcularDiferencia = function(input, esperado) {
@@ -99,11 +163,14 @@
             const celdaDiff = input.parentElement.nextElementSibling;
             if (isNaN(fisico)) {
                 celdaDiff.textContent = "-";
+                celdaDiff.classList.remove("diferencia-alerta");
                 return;
             }
             const diff = fisico - esperado;
             celdaDiff.textContent = diff > 0 ? `+${diff}` : diff;
             celdaDiff.style.color = diff === 0 ? "#aaffaa" : "#ff6666";
+            if (diff !== 0) celdaDiff.classList.add("diferencia-alerta");
+            else celdaDiff.classList.remove("diferencia-alerta");
         };
 
         async function guardarConteo() {
@@ -134,20 +201,13 @@
                     fecha: fecha,
                     detalles: detalles
                 });
-                alert("✅ Auditoría guardada con éxito.");
-                location.reload(); // Recargar para limpiar
+                alert("✅ Conteo guardado con éxito.");
+                location.reload(); 
             } catch (e) {
                 alert("Error al guardar: " + e.message);
             }
         }
-
-        function filtrarInventario(e) {
-            const busqueda = e.target.value.toLowerCase();
-            document.querySelectorAll('#tablaInventario tr').forEach(fila => {
-                const texto = fila.dataset.nombre.toLowerCase();
-                fila.style.display = texto.includes(busqueda) ? "" : "none";
-            });
-        }
     </script>
+    <script src="animations.js"></script>
 </body>
 </html>

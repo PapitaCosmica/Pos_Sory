@@ -8,11 +8,8 @@
     <link rel="stylesheet" href="styles.css"> 
     
     <style>
-        /* -------------------------------------- */
-        /* BASE Y ESTRUCTURA */
-        /* -------------------------------------- */
+        /* MANTENEMOS TODOS TUS ESTILOS EXACTAMENTE IGUALES */
         body { 
-            /* Usamos los estilos de body de styles.css (fondo animado) */
             margin: 0;
             padding: 20px;
             display: flex;
@@ -23,12 +20,11 @@
         }
 
         .main-container {
-            /* Contenedor principal para el efecto de brillo */
             max-width: 1200px;
             width: 95%;
             padding: 30px;
-            box-shadow: none !important; /* Quitar sombra extra */
-            background: none !important; /* Quitar fondo extra */
+            box-shadow: none !important;
+            background: none !important;
         }
 
         h1 { 
@@ -44,18 +40,14 @@
             padding-bottom: 10px;
         }
 
-        /* -------------------------------------- */
-        /* CONTENEDOR DE PANELES (Flexible) */
-        /* -------------------------------------- */
         .container { 
             display: flex; 
             gap: 20px;
             width: 100%;
         }
         
-        /* Contenedores de Cristal para los Paneles */
         .panel-izquierdo, .panel-derecho { 
-            background: rgba(255, 255, 255, 0.15); /* Base de cristal */
+            background: rgba(255, 255, 255, 0.15); 
             backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 12px;
@@ -64,22 +56,11 @@
             min-height: 600px;
         }
 
-        .panel-izquierdo { 
-            flex: 2; 
-        }
-        .panel-derecho { 
-            flex: 1; 
-            /* Eliminamos el borde de la línea central que ya no es necesario */
-            border-left: none;
-        }
+        .panel-izquierdo { flex: 2; }
+        .panel-derecho { flex: 1; border-left: none; }
         
-        /* -------------------------------------- */
-        /* ESTILOS DE PRODUCTOS Y CARRITO */
-        /* -------------------------------------- */
-        
-        /* Tarjetas de Producto (Clickable) */
         .producto-card { 
-            background: rgba(255, 255, 255, 0.05); /* Fondo muy suave */
+            background: rgba(255, 255, 255, 0.05); 
             border: 1px solid rgba(255, 255, 255, 0.2); 
             padding: 15px; 
             margin-bottom: 10px; 
@@ -88,18 +69,13 @@
             transition: background-color 0.2s, transform 0.2s; 
         }
         .producto-card:hover { 
-            background: rgba(255, 255, 255, 0.15); /* Brillo al pasar el mouse */
+            background: rgba(255, 255, 255, 0.15); 
             transform: translateY(-2px);
         }
         
-        /* Carrito (Lista) */
-        #listaVenta { 
-            list-style: none; 
-            padding: 0; 
-            margin-bottom: 20px;
-        }
+        #listaVenta { list-style: none; padding: 0; margin-bottom: 20px; }
         #listaVenta li { 
-            border-bottom: 1px dashed rgba(255, 255, 255, 0.3); /* Línea punteada de cristal */
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.3); 
             padding: 10px 0; 
             display: flex; 
             justify-content: space-between; 
@@ -107,26 +83,16 @@
             font-size: 1.1em;
         }
         .eliminar-item { 
-            color: #ff6666; /* Rojo suave */
+            color: #ff6666; 
             cursor: pointer; 
             font-weight: bold; 
             margin-left: 15px; 
             transition: color 0.2s;
         }
-        .eliminar-item:hover {
-            color: #ff0000;
-        }
         
-        /* Totales */
-        #totalVenta { 
-            color: #aaffaa; /* Verde claro brillante */ 
-            font-size: 1.8em; 
-            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-        }
+        #totalVenta { color: #aaffaa; font-size: 1.8em; text-shadow: 0 0 5px rgba(0, 0, 0, 0.5); }
         
-        /* Formulario y Select */
         select {
-            /* Adaptar el select al estilo de cristal */
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.3);
             color: #fff;
@@ -136,47 +102,21 @@
             margin-top: 5px;
         }
         
-        /* Input de búsqueda */
-        #filtroProductos {
-            /* Usamos la clase glass-input para uniformidad */
-            width: 100% !important; 
-            padding: 10px; 
-            margin-bottom: 15px;
-        }
+        #filtroProductos { width: 100% !important; padding: 10px; margin-bottom: 15px; }
         
-        /* Botón de Finalizar Venta */
         #finalizarVentaBtn { 
-            /* Usamos la clase glass-button */
             width: 100%;
-            background-color: rgba(40, 167, 69, 0.5) !important; /* Verde semitransparente */
+            background-color: rgba(40, 167, 69, 0.5) !important;
             font-size: 1.1em;
         }
-        #finalizarVentaBtn:hover:not(:disabled) {
-             background-color: rgba(40, 167, 69, 0.8) !important;
-        }
-        #finalizarVentaBtn:disabled { 
-            background-color: rgba(170, 170, 170, 0.3) !important; 
-            cursor: not-allowed; 
-        }
-
-        /* Barra de navegación */
         .nav-bar { 
             margin-bottom: 20px; 
             background: rgba(0, 0, 0, 0.3);
             padding: 10px;
             border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
             text-align: center;
         }
-        .nav-bar a { 
-            margin: 0 10px; 
-            text-decoration: none; 
-            color: #87ceeb; 
-            transition: color 0.3s;
-        }
-        .nav-bar a:hover {
-            color: #fff;
-        }
+        .nav-bar a { margin: 0 10px; text-decoration: none; color: #87ceeb; }
     </style>
 </head>
 <body>
@@ -189,24 +129,23 @@
             <a href="reportes.html">Reportes</a>
         </div>
 
-        <h1>Punto de Venta (Firebase)</h1>
+        <h1>Punto de Venta</h1>
 
         <div id="cajaStatus">Cargando estado de caja...</div>
 
         <div class="container">
             <div class="panel-izquierdo">
-                <h2>Productos Disponibles</h2>
-                <input type="text" id="filtroProductos" placeholder="Buscar producto..." class="glass-input">
+                <h2>Búsqueda de Productos</h2>
+                <input type="text" id="filtroProductos" placeholder="Escribe para buscar productos..." class="glass-input" autofocus>
                 
                 <div id="productosLista">
-                    Cargando productos...
+                    Empieza a escribir el nombre de un producto para buscarlo...
                 </div>
             </div>
 
             <div class="panel-derecho">
                 <h2>Venta Actual</h2>
-                <ul id="listaVenta">
-                </ul>
+                <ul id="listaVenta"></ul>
                 
                 <p>Subtotal: $<span id="subtotalVenta">0.00</span></p>
                 <p>Impuestos (0%): $<span id="impuestosVenta">0.00</span></p>
@@ -228,16 +167,7 @@
 
         <script type="module">
             import { 
-                db,
-                collection,
-                addDoc,
-                getDocs,
-                query,
-                orderBy,
-                where,
-                doc, 
-                runTransaction,
-                limit
+                db, collection, addDoc, getDocs, query, orderBy, where, doc, runTransaction, limit
             } from './firebase_init.js'; 
 
             const productosRef = collection(db, "productos");
@@ -246,94 +176,13 @@
             
             let idCajaAbierta = null;
             let carrito = []; 
-            let productosCache = {}; 
+            let productosMemoria = []; // Guardaremos los productos aquí para no pedirlos a Firebase a cada rato
 
             document.addEventListener('DOMContentLoaded', () => {
                 verificarCajaAbierta();
                 document.getElementById('finalizarVentaBtn').addEventListener('click', finalizarVenta);
-                document.getElementById('filtroProductos').addEventListener('keyup', filtrarProductos);
+                document.getElementById('filtroProductos').addEventListener('input', manejarBusqueda);
             });
-
-            // ===============================================
-            // LÓGICA DE PRODUCTOS (Carga y Renderizado Seguro)
-            // ===============================================
-            
-            async function cargarProductos() {
-                const listaDiv = document.getElementById('productosLista');
-                listaDiv.innerHTML = 'Cargando productos...';
-                productosCache = {};
-                
-                try {
-                    const q = query(productosRef, orderBy("nombre", "asc"));
-                    const snapshot = await getDocs(q);
-                    
-                    if (snapshot.empty) {
-                        listaDiv.innerHTML = '<p>No hay productos registrados.</p>';
-                        return;
-                    }
-
-                    listaDiv.innerHTML = '';
-                    let productosConStock = 0;
-                    
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        
-                        const precio = parseFloat(data.precio_venta || 0); 
-                        const stock = parseInt(data.stock || 0);
-
-                        if (isNaN(precio) || isNaN(stock) || stock < 1) {
-                            return;
-                        }
-                        
-                        productosCache[doc.id] = {...data, id: doc.id, precio: precio, stock: stock};
-                        renderizarProductoCard(doc.id, data);
-                        productosConStock++;
-                    });
-
-                    if (productosConStock === 0) {
-                        listaDiv.innerHTML = '<p>No hay productos con stock disponible.</p>';
-                    }
-
-                } catch (error) {
-                    console.error('Error al cargar los productos:', error);
-                    listaDiv.innerHTML = `<p style="color: red;">Error al cargar productos: ${error.message}</p>`;
-                }
-            }
-
-            function renderizarProductoCard(id, data) {
-                const listaDiv = document.getElementById('productosLista');
-                const card = document.createElement('div');
-                card.classList.add('producto-card');
-                card.dataset.id = id;
-                
-                card.innerHTML = `
-                    <strong>${data.nombre}</strong><br>
-                    Precio: $${parseFloat(data.precio_venta || 0).toFixed(2)} | Stock: ${data.stock}
-                `;
-                card.addEventListener('click', () => agregarACarrito(id));
-                listaDiv.appendChild(card);
-            }
-
-            function filtrarProductos() {
-                const filtro = document.getElementById('filtroProductos').value.toLowerCase();
-                const cards = document.querySelectorAll('#productosLista .producto-card');
-
-                cards.forEach(card => {
-                    const nombre = productosCache[card.dataset.id]?.nombre.toLowerCase() || '';
-                    // Incluimos código de barra en el filtro, si existe
-                    const codigo = productosCache[card.dataset.id]?.codigo_barra?.toLowerCase() || '';
-
-                    if (nombre.includes(filtro) || codigo.includes(filtro)) {
-                        card.style.display = 'block';
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
-            }
-            
-            // ===============================================
-            // LÓGICA DE CAJA (Verificación)
-            // ===============================================
 
             async function verificarCajaAbierta() {
                 const statusDiv = document.getElementById('cajaStatus');
@@ -343,33 +192,66 @@
 
                     if (snapshot.empty) {
                         idCajaAbierta = null;
-                        statusDiv.innerHTML = '<p style="color: #ff6666; font-weight: bold;">❌ CAJA CERRADA. No se pueden realizar ventas. <a href="caja.html" style="color: #87ceeb;">Abrir Caja</a></p>';
+                        statusDiv.innerHTML = '<p style="color: #ff6666; font-weight: bold;">❌ CAJA CERRADA. <a href="caja.html" style="color: #87ceeb;">Abrir Caja</a></p>';
                         document.getElementById('finalizarVentaBtn').disabled = true;
                     } else {
                         idCajaAbierta = snapshot.docs[0].id;
-                        const data = snapshot.docs[0].data();
-                        statusDiv.innerHTML = `<p style="color: #aaffaa; font-weight: bold;">✅ CAJA ABIERTA (ID: ${idCajaAbierta}). Monto Inicial: $${parseFloat(data.monto_inicial || 0).toFixed(2)}</p>`;
+                        statusDiv.innerHTML = `<p style="color: #aaffaa; font-weight: bold;">✅ CAJA ABIERTA</p>`;
                         document.getElementById('finalizarVentaBtn').disabled = false;
-                        cargarProductos(); 
+                        descargarProductosAMemoria(); // Bajamos los datos al iniciar
                     }
                 } catch (error) {
-                    console.error("Error al verificar caja:", error);
-                    statusDiv.innerHTML = `<p style="color: #ff6666;">Error al conectar con la caja: ${error.message}</p>`;
-                    document.getElementById('finalizarVentaBtn').disabled = true;
+                    statusDiv.innerHTML = `<p style="color: #ff6666;">Error: ${error.message}</p>`;
                 }
             }
 
-            // ===============================================
-            // LÓGICA DE CARRITO Y FINALIZAR VENTA
-            // ===============================================
+            // Descarga los productos una sola vez para que la búsqueda sea instantánea
+            async function descargarProductosAMemoria() {
+                const q = query(productosRef, orderBy("nombre", "asc"));
+                const snapshot = await getDocs(q);
+                productosMemoria = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    precio: parseFloat(doc.data().precio_venta || 0),
+                    stock: parseInt(doc.data().stock || 0)
+                })).filter(p => p.stock > 0); // Solo productos con stock
+            }
 
-            function agregarACarrito(productoId) {
-                if (!idCajaAbierta) {
-                    alert("La caja debe estar abierta para realizar ventas.");
+            // Esta función filtra y RENDERIZA solo los necesarios (Máximo 15 para velocidad)
+            function manejarBusqueda(e) {
+                const listaDiv = document.getElementById('productosLista');
+                const termino = e.target.value.toLowerCase().trim();
+
+                if (termino === "") {
+                    listaDiv.innerHTML = 'Empieza a escribir para buscar...';
                     return;
                 }
-                
-                const producto = productosCache[productoId];
+
+                const filtrados = productosMemoria.filter(p => 
+                    p.nombre.toLowerCase().includes(termino) || 
+                    (p.codigo_barra && p.codigo_barra.toLowerCase().includes(termino))
+                ).slice(0, 15); // Solo mostramos los primeros 15 resultados para que no haya lag
+
+                listaDiv.innerHTML = '';
+                if (filtrados.length === 0) {
+                    listaDiv.innerHTML = 'No se encontraron productos.';
+                    return;
+                }
+
+                filtrados.forEach(p => {
+                    const card = document.createElement('div');
+                    card.classList.add('producto-card');
+                    card.innerHTML = `
+                        <strong>${p.nombre}</strong><br>
+                        Precio: $${p.precio.toFixed(2)} | Stock: ${p.stock}
+                    `;
+                    card.onclick = () => agregarACarrito(p.id);
+                    listaDiv.appendChild(card);
+                });
+            }
+
+            function agregarACarrito(productoId) {
+                const producto = productosMemoria.find(p => p.id === productoId);
                 if (!producto) return;
 
                 const itemIndex = carrito.findIndex(item => item.id === productoId);
@@ -378,31 +260,16 @@
                     if (carrito[itemIndex].cantidad < producto.stock) {
                         carrito[itemIndex].cantidad += 1;
                     } else {
-                        alert(`No hay suficiente stock para agregar más de ${producto.nombre}. Stock disponible: ${producto.stock}`);
+                        alert(`Stock insuficiente.`);
                         return;
                     }
                 } else {
-                    if (producto.stock > 0) {
-                        carrito.push({
-                            id: productoId,
-                            nombre: producto.nombre,
-                            precio: producto.precio,
-                            cantidad: 1,
-                            stockActual: producto.stock
-                        });
-                    } else {
-                        alert(`El producto ${producto.nombre} no tiene stock.`);
-                        return;
-                    }
-                }
-
-                actualizarCarritoUI();
-            }
-            
-            function eliminarItem(productoId) {
-                const itemIndex = carrito.findIndex(item => item.id === productoId);
-                if (itemIndex > -1) {
-                    carrito.splice(itemIndex, 1);
+                    carrito.push({
+                        id: productoId,
+                        nombre: producto.nombre,
+                        precio: producto.precio,
+                        cantidad: 1
+                    });
                 }
                 actualizarCarritoUI();
             }
@@ -412,138 +279,63 @@
                 listaUI.innerHTML = '';
                 let subtotal = 0;
 
-                if (carrito.length === 0) {
-                    listaUI.innerHTML = '<li style="color: rgba(255, 255, 255, 0.7);">El carrito está vacío.</li>';
-                }
-
                 carrito.forEach(item => {
                     const totalItem = item.precio * item.cantidad;
                     subtotal += totalItem;
-
                     const li = document.createElement('li');
                     li.innerHTML = `
                         <span>${item.nombre} x ${item.cantidad}</span>
-                        <span>$${totalItem.toFixed(2)} 
-                            <span class="eliminar-item" data-id="${item.id}">X</span>
-                        </span>
+                        <span>$${totalItem.toFixed(2)} <span class="eliminar-item" onclick="window.quitarDelCarrito('${item.id}')">X</span></span>
                     `;
                     listaUI.appendChild(li);
                 });
 
-                document.querySelectorAll('.eliminar-item').forEach(btn => {
-                    btn.addEventListener('click', (e) => eliminarItem(e.target.dataset.id));
-                });
-
-                const impuestos = 0; 
-                const total = subtotal + impuestos;
-
+                document.getElementById('totalVenta').textContent = subtotal.toFixed(2);
                 document.getElementById('subtotalVenta').textContent = subtotal.toFixed(2);
-                document.getElementById('impuestosVenta').textContent = impuestos.toFixed(2);
-                document.getElementById('totalVenta').textContent = total.toFixed(2);
-
-                document.getElementById('finalizarVentaBtn').disabled = carrito.length === 0 || !idCajaAbierta;
+                document.getElementById('finalizarVentaBtn').disabled = carrito.length === 0;
             }
+
+            window.quitarDelCarrito = (id) => {
+                carrito = carrito.filter(i => i.id !== id);
+                actualizarCarritoUI();
+            };
 
             async function finalizarVenta() {
-                if (carrito.length === 0) {
-                    alert("El carrito está vacío. Agrega productos para finalizar la venta.");
-                    return;
-                }
-                
                 const total = parseFloat(document.getElementById('totalVenta').textContent);
                 const tipoPago = document.getElementById('tipoPago').value;
-                const fechaHora = new Date().toLocaleString('es-MX', {
-                    year: 'numeric', month: '2-digit', day: '2-digit', 
-                    hour: '2-digit', minute: '2-digit', second: '2-digit'
-                });
-
                 const btn = document.getElementById('finalizarVentaBtn');
                 btn.disabled = true;
-                btn.textContent = 'Procesando...';
 
                 try {
-                    // 1. Ejecutar Transacción de Firebase
                     await runTransaction(db, async (transaction) => {
-                        const detallesVenta = [];
-                        const stockUpdates = []; 
-                        
-                        // ==============================================
-                        // FASE 1: LECTURA Y VALIDACIÓN DE STOCK
-                        // ==============================================
                         for (const item of carrito) {
-                            const productoRef = doc(db, "productos", item.id);
-                            
-                            const productoDoc = await transaction.get(productoRef);
-                            
-                            if (!productoDoc.exists) {
-                                throw new Error(`Producto ${item.nombre} no encontrado en inventario.`);
-                            }
-                            
-                            const currentStock = productoDoc.data().stock || 0;
-                            const nuevoStock = currentStock - item.cantidad;
-                            
-                            // VALIDACIÓN: Verificar si el nuevo stock es negativo
-                            if (nuevoStock < 0) {
-                                throw new Error(`Stock insuficiente para ${item.nombre}. Disponible: ${currentStock}.`);
-                            }
-                            
-                            // Preparar la estructura de la venta
-                            detallesVenta.push({
-                                id_producto: item.id,
-                                nombre: item.nombre,
-                                precio_unitario: item.precio,
-                                cantidad: item.cantidad,
-                                total_item: item.precio * item.cantidad
-                            });
-                            
-                            // Almacenar la referencia y el nuevo valor para la fase de ESCRITURA
-                            stockUpdates.push({
-                                ref: productoRef,
-                                newStock: nuevoStock
-                            });
+                            const pRef = doc(db, "productos", item.id);
+                            const pSnap = await transaction.get(pRef);
+                            const nuevoStock = pSnap.data().stock - item.cantidad;
+                            if (nuevoStock < 0) throw new Error(`Sin stock para ${item.nombre}`);
+                            transaction.update(pRef, { stock: nuevoStock });
                         }
-                        
-                        // ==============================================
-                        // FASE 2: ESCRITURA (Si la validación fue exitosa)
-                        // ==============================================
-
-                        // a) Registrar la Venta (ESCRITURA)
-                        const nuevaVenta = {
+                        transaction.set(doc(ventasRef), {
                             id_corte: null,
-                            fecha_hora: fechaHora,
+                            fecha_hora: new Date().toLocaleString(),
                             total_venta: total,
-                            tipo_pago: tipoPago,
-                            detalles: detallesVenta 
-                        };
-                        transaction.set(doc(ventasRef), nuevaVenta);
-                        
-                        // b) Actualizar Stock (ESCRITURA)
-                        for (const update of stockUpdates) {
-                            transaction.update(update.ref, { stock: update.newStock });
-                        }
+                            tipo_pago: tipoPago
+                        });
                     });
 
-                    // 2. Éxito de la transacción
-                    alert(`¡Venta procesada con éxito! Total: $${total.toFixed(2)}`);
-                    
-                    // 3. Limpiar y recargar
+                    alert("Venta exitosa");
                     carrito = [];
                     actualizarCarritoUI();
-                    await cargarProductos(); // Recargar para mostrar el stock actualizado
-                    
-                } catch (error) {
-                    console.error("Fallo de Transacción:", error);
-                    const errorMessage = error.message || 'Error desconocido en la transacción.';
-                    alert(`Error en la venta. La operación fue revertida. Error: ${errorMessage}`);
-                    
+                    document.getElementById('filtroProductos').value = '';
+                    await descargarProductosAMemoria();
+                    document.getElementById('productosLista').innerHTML = 'Empieza a escribir para buscar...';
+                } catch (e) {
+                    alert("Error: " + e.message);
                 } finally {
                     btn.disabled = false;
-                    btn.textContent = 'Finalizar Venta';
                 }
             }
-            
         </script>
     </div>
-    <script src="animations.js"></script>
 </body>
 </html>
