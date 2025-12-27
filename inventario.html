@@ -6,7 +6,6 @@
     <title>Pre-Inventario | POS Sory</title>
     <link rel="stylesheet" href="styles.css">
     <style>
-        /* Estilos para los estados de stock */
         .stock-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
         .stock-bien { background: rgba(40, 167, 69, 0.7); }
         .stock-bajo { background: rgba(255, 193, 7, 0.8); color: #212529; }
@@ -15,7 +14,6 @@
         .diferencia-alerta { color: #ff6666; animation: blink 2s infinite; font-weight: bold; }
         @keyframes blink { 50% { opacity: 0.5; } }
 
-        /* Estilos para paginación */
         .paginacion-container {
             display: flex;
             justify-content: center;
@@ -41,7 +39,7 @@
             <input type="text" id="buscadorInventario" class="glass-input" placeholder="🔍 Buscar por nombre o categoría..." style="margin-bottom: 0; flex: 1;">
             
             <button id="btnGuardarInventario" class="glass-button" style="width: auto; margin-top: 0; background: rgba(0, 123, 255, 0.4);">
-                💾 Guardar Conteo
+                💾 Guardar Conteo y Actualizar Stock
             </button>
         </div>
 
@@ -51,8 +49,8 @@
                     <tr>
                         <th>Producto / Cat.</th>
                         <th>Estado</th>
-                        <th>Sistema</th>
-                        <th>Físico</th>
+                        <th>Sistema (Teórico)</th>
+                        <th>Físico (Conteo)</th>
                         <th>Diferencia</th>
                     </tr>
                 </thead>
@@ -71,7 +69,7 @@
 
     <script type="module">
         import { 
-            db, collection, getDocs, addDoc, query, orderBy 
+            db, collection, getDocs, addDoc, updateDoc, doc, query, orderBy 
         } from './firebase_init.js'; 
 
         const productosRef = collection(db, "productos");
@@ -132,7 +130,6 @@
                 `;
             });
 
-            // Actualizar info de página
             document.getElementById('infoPag').textContent = `Página ${paginaActual} de ${totalPaginas}`;
             document.getElementById('btnAnt').disabled = paginaActual === 1;
             document.getElementById('btnSig').disabled = paginaActual >= totalPaginas;
@@ -177,37 +174,59 @@
             const filas = document.querySelectorAll('#tablaInventario tr');
             const detalles = [];
             const fecha = new Date().toLocaleString();
-
-            filas.forEach(fila => {
-                const fisicoInput = fila.querySelector('.input-fisico');
-                if (fisicoInput && fisicoInput.value !== "") {
-                    detalles.push({
-                        producto: fila.dataset.nombre,
-                        id_producto: fila.dataset.id,
-                        sistema: parseInt(fila.cells[2].textContent),
-                        fisico: parseInt(fisicoInput.value),
-                        diferencia: parseInt(fila.cells[4].textContent)
-                    });
-                }
-            });
-
-            if (detalles.length === 0) {
-                alert("Por favor, ingresa al menos un conteo físico.");
-                return;
-            }
+            
+            const btn = document.getElementById('btnGuardarInventario');
+            btn.disabled = true;
+            btn.textContent = "⏳ Procesando y Actualizando...";
 
             try {
+                // Usamos un bucle para poder usar await en cada actualización
+                for (const fila of filas) {
+                    const fisicoInput = fila.querySelector('.input-fisico');
+                    
+                    if (fisicoInput && fisicoInput.value !== "") {
+                        const idProducto = fila.dataset.id;
+                        const stockNuevo = parseInt(fisicoInput.value);
+                        const stockSistema = parseInt(fila.cells[2].textContent);
+
+                        // 1. Guardamos el detalle para el historial
+                        detalles.push({
+                            producto: fila.dataset.nombre,
+                            id_producto: idProducto,
+                            sistema: stockSistema,
+                            fisico: stockNuevo,
+                            diferencia: stockNuevo - stockSistema
+                        });
+
+                        // 2. ACTUALIZAMOS EL STOCK REAL EN LA BASE DE DATOS
+                        const productoDoc = doc(db, "productos", idProducto);
+                        await updateDoc(productoDoc, {
+                            stock: stockNuevo
+                        });
+                    }
+                }
+
+                if (detalles.length === 0) {
+                    alert("Por favor, ingresa al menos un conteo físico.");
+                    btn.disabled = false;
+                    btn.textContent = "💾 Guardar Conteo y Actualizar Stock";
+                    return;
+                }
+
+                // Guardamos el registro de la auditoría
                 await addDoc(auditoriaRef, {
                     fecha: fecha,
                     detalles: detalles
                 });
-                alert("✅ Conteo guardado con éxito.");
+
+                alert("✅ ¡Éxito! El stock ha sido actualizado en el sistema.");
                 location.reload(); 
             } catch (e) {
                 alert("Error al guardar: " + e.message);
+                btn.disabled = false;
+                btn.textContent = "💾 Guardar Conteo y Actualizar Stock";
             }
         }
     </script>
-    <script src="animations.js"></script>
 </body>
 </html>
