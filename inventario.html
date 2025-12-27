@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pre-Inventario | POS Sory</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .stock-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
+        .stock-bien { background: rgba(40, 167, 69, 0.7); }
+        .stock-bajo { background: rgba(255, 193, 7, 0.8); color: #212529; }
+        .stock-nulo { background: rgba(220, 53, 69, 0.7); }
+        .diferencia-alerta { color: #ff6666; animation: blink 2s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+    <div class="glass-container">
+        <div class="nav-bar">
+            <a href="index.html">Menú</a> |
+            <a href="productos.html">Productos</a> |
+            <a href="venta.html">Venta</a> |
+            <a href="reportes.html">Reportes</a>
+        </div>
+
+        <h2>📋 Auditoría de Inventario</h2>
+
+        <div class="glass-panel" style="display: flex; gap: 15px; align-items: center;">
+            <input type="text" id="buscadorInventario" class="glass-input" placeholder="🔍 Buscar producto..." style="margin-bottom: 0;">
+            <button id="btnGuardarInventario" class="glass-button" style="width: auto; background: rgba(0, 123, 255, 0.4);">
+                💾 Guardar Conteo
+            </button>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Estado</th>
+                        <th>Sistema</th>
+                        <th>Físico</th>
+                        <th>Diferencia</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaInventario">
+                    <tr><td colspan="5" style="text-align:center;">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { 
+            db, collection, getDocs, addDoc, query, orderBy 
+        } from './firebase_init.js'; 
+
+        const productosRef = collection(db, "productos");
+        const auditoriaRef = collection(db, "inventario_auditoria"); // Nueva colección
+
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarInventario();
+            document.getElementById('buscadorInventario').addEventListener('input', filtrarInventario);
+            document.getElementById('btnGuardarInventario').addEventListener('click', guardarConteo);
+        });
+
+        async function cargarInventario() {
+            const tabla = document.getElementById('tablaInventario');
+            try {
+                const snapshot = await getDocs(query(productosRef, orderBy("nombre", "asc")));
+                tabla.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const stock = parseInt(data.stock || 0);
+                    
+                    let clase = "stock-bien";
+                    if (stock <= 0) clase = "stock-nulo";
+                    else if (stock <= 5) clase = "stock-bajo";
+
+                    const fila = tabla.insertRow();
+                    fila.dataset.id = doc.id;
+                    fila.dataset.nombre = data.nombre;
+                    fila.innerHTML = `
+                        <td><strong>${data.nombre}</strong></td>
+                        <td><span class="stock-badge ${clase}">${stock <= 0 ? 'Agotado' : 'Disponible'}</span></td>
+                        <td style="text-align:center;">${stock}</td>
+                        <td>
+                            <input type="number" class="glass-input input-fisico" style="width:80px; margin-bottom:0;" 
+                                   placeholder="0" oninput="window.calcularDiferencia(this, ${stock})">
+                        </td>
+                        <td class="diff-val" style="text-align:center; font-weight:bold;">-</td>
+                    `;
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        window.calcularDiferencia = function(input, esperado) {
+            const fisico = parseInt(input.value);
+            const celdaDiff = input.parentElement.nextElementSibling;
+            if (isNaN(fisico)) {
+                celdaDiff.textContent = "-";
+                return;
+            }
+            const diff = fisico - esperado;
+            celdaDiff.textContent = diff > 0 ? `+${diff}` : diff;
+            celdaDiff.style.color = diff === 0 ? "#aaffaa" : "#ff6666";
+        };
+
+        async function guardarConteo() {
+            const filas = document.querySelectorAll('#tablaInventario tr');
+            const detalles = [];
+            const fecha = new Date().toLocaleString();
+
+            filas.forEach(fila => {
+                const fisicoInput = fila.querySelector('.input-fisico');
+                if (fisicoInput && fisicoInput.value !== "") {
+                    detalles.push({
+                        producto: fila.dataset.nombre,
+                        id_producto: fila.dataset.id,
+                        sistema: parseInt(fila.cells[2].textContent),
+                        fisico: parseInt(fisicoInput.value),
+                        diferencia: parseInt(fila.cells[4].textContent)
+                    });
+                }
+            });
+
+            if (detalles.length === 0) {
+                alert("Por favor, ingresa al menos un conteo físico.");
+                return;
+            }
+
+            try {
+                await addDoc(auditoriaRef, {
+                    fecha: fecha,
+                    detalles: detalles
+                });
+                alert("✅ Auditoría guardada con éxito.");
+                location.reload(); // Recargar para limpiar
+            } catch (e) {
+                alert("Error al guardar: " + e.message);
+            }
+        }
+
+        function filtrarInventario(e) {
+            const busqueda = e.target.value.toLowerCase();
+            document.querySelectorAll('#tablaInventario tr').forEach(fila => {
+                const texto = fila.dataset.nombre.toLowerCase();
+                fila.style.display = texto.includes(busqueda) ? "" : "none";
+            });
+        }
+    </script>
+</body>
+</html>

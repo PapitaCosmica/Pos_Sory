@@ -3,15 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Productos | POS Simple</title>
-    
+    <title>Gestión de Productos | POS Sory</title>
     <link rel="stylesheet" href="styles.css"> 
-    
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
     <div class="glass-container">
-        
         <div class="nav-bar">
             <a href="index.html">Menú</a> |
             <a href="venta.html">Venta</a> |
@@ -21,10 +18,13 @@
 
         <h2>📦 Gestión de Productos</h2>
 
-        <button id="btnNuevoProducto" class="glass-button">➕ Agregar Nuevo Producto</button>
+        <div class="glass-panel" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+            <button id="btnNuevoProducto" class="glass-button" style="width: auto; margin-top: 0;">➕ Nuevo Producto</button>
+            <input type="text" id="buscadorProductos" class="glass-input" placeholder="🔍 Buscar por nombre o código..." style="margin-bottom: 0; flex: 1; min-width: 200px;">
+        </div>
 
-        <div id="formularioProducto" class="glass-panel" style="display: none; max-width: 500px;">
-            <h3>Crear/Editar Producto</h3>
+        <div id="formularioProducto" class="glass-panel" style="display: none; max-width: 500px; margin: 20px auto;">
+            <h3 id="tituloFormulario">Crear Producto</h3>
             <form id="formProducto">
                 <input type="hidden" id="doc_id" name="doc_id"> 
                 
@@ -47,7 +47,7 @@
                 
                 <div style="margin-top: 20px; text-align: right;">
                     <button type="button" onclick="window.ocultarFormulario()" class="glass-button glass-button-danger">Cancelar</button>
-                    <button type="submit" class="glass-button" style="background: rgba(40, 167, 69, 0.4);">Guardar</button>
+                    <button type="submit" class="glass-button" style="background: rgba(40, 167, 69, 0.4);">Guardar Cambios</button>
                 </div>
             </form>
         </div>
@@ -55,21 +55,20 @@
         <table>
             <thead>
                 <tr>
-                    <th>ID (Firestore)</th>
                     <th>Nombre</th>
-                    <th>Precio Venta</th>
+                    <th>Precio</th>
                     <th>Stock</th>
                     <th>Código</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody id="tablaProductos">
-                <tr><td colspan="6" style="text-align:center;">Cargando productos...</td></tr>
+                <tr><td colspan="5" style="text-align:center;">Cargando productos...</td></tr>
             </tbody>
         </table>
 
         <script type="module">
-            import { db, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from './firebase_init.js'; 
+            import { db, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy } from './firebase_init.js'; 
 
             const productosRef = collection(db, "productos");
 
@@ -80,91 +79,73 @@
 
             document.addEventListener('DOMContentLoaded', () => {
                 cargarProductos();
-                document.getElementById('btnNuevoProducto').addEventListener('click', mostrarFormulario);
+                document.getElementById('btnNuevoProducto').addEventListener('click', () => mostrarFormulario());
                 document.getElementById('formProducto').addEventListener('submit', guardarProducto);
+                document.getElementById('buscadorProductos').addEventListener('input', filtrarProductos);
                 configurarEscaner();
             });
 
-            // --- Lógica Escáner ---
-            function configurarEscaner() {
-                let html5QrcodeScanner = null;
-                const btnScan = document.getElementById('btnScan');
-                
-                btnScan.addEventListener('click', () => {
-                    const readerDiv = document.getElementById('reader');
-                    if (readerDiv.style.display === 'block') { detenerEscaner(); return; }
-                    
-                    readerDiv.style.display = 'block';
-                    html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 150 } }, false);
-                    
-                    html5QrcodeScanner.render((decodedText) => {
-                        document.getElementById('codigo_barra').value = decodedText;
-                        detenerEscaner();
-                    }, (err) => {});
+            // --- BUSCADOR ---
+            function filtrarProductos(e) {
+                const termino = e.target.value.toLowerCase();
+                const filas = document.querySelectorAll('#tablaProductos tr');
+                filas.forEach(fila => {
+                    const texto = fila.innerText.toLowerCase();
+                    fila.style.display = texto.includes(termino) ? "" : "none";
                 });
-
-                function detenerEscaner() {
-                    if (html5QrcodeScanner) {
-                        html5QrcodeScanner.clear().then(() => {
-                            document.getElementById('reader').style.display = 'none';
-                            html5QrcodeScanner = null;
-                        });
-                    } else {
-                        document.getElementById('reader').style.display = 'none';
-                    }
-                }
             }
 
-            // --- Lógica CRUD ---
-            function mostrarFormulario() {
-                document.getElementById('doc_id').value = '';
-                document.getElementById('nombre').value = '';
-                document.getElementById('precio_venta').value = '';
-                document.getElementById('stock').value = '';
-                document.getElementById('codigo_barra').value = '';
-                document.getElementById('formularioProducto').style.display = 'block'; 
+            // --- LÓGICA DE FORMULARIO ---
+            function mostrarFormulario(datos = null) {
+                const form = document.getElementById('formularioProducto');
+                const titulo = document.getElementById('tituloFormulario');
+                
+                if (datos) {
+                    titulo.textContent = "Editar Producto";
+                    document.getElementById('doc_id').value = datos.docId;
+                    document.getElementById('nombre').value = datos.nombre;
+                    document.getElementById('precio_venta').value = datos.precio_venta;
+                    document.getElementById('stock').value = datos.stock;
+                    document.getElementById('codigo_barra').value = datos.codigo_barra || "";
+                } else {
+                    titulo.textContent = "Crear Producto";
+                    document.getElementById('formProducto').reset();
+                    document.getElementById('doc_id').value = "";
+                }
+                form.style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
 
             function ocultarFormulario() {
                 document.getElementById('formularioProducto').style.display = 'none';
+                document.getElementById('formProducto').reset();
             }
 
             async function cargarProductos() {
                 const tablaBody = document.getElementById('tablaProductos');
-                tablaBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Cargando...</td></tr>';
-
                 try {
-                    const snapshot = await getDocs(productosRef);
+                    const q = query(productosRef, orderBy("nombre", "asc"));
+                    const snapshot = await getDocs(q);
                     tablaBody.innerHTML = '';
-                    
-                    if (snapshot.empty) {
-                        tablaBody.innerHTML = '<tr><td colspan="6">No hay productos registrados en Firestore.</td></tr>';
-                        return;
-                    }
-
                     snapshot.forEach(productoDoc => {
-                        const producto = productoDoc.data();
-                        const docId = productoDoc.id; 
+                        const p = productoDoc.data();
+                        const docId = productoDoc.id;
                         const fila = tablaBody.insertRow();
-                        
-                        fila.insertCell(0).textContent = docId.substring(0, 8) + '...';
-                        fila.insertCell(1).textContent = producto.nombre;
-                        fila.insertCell(2).textContent = `$${parseFloat(producto.precio_venta || 0).toFixed(2)}`;
-                        fila.insertCell(3).textContent = producto.stock;
-                        fila.insertCell(4).textContent = producto.codigo_barra || 'N/A';
-                        
-                        const celdaAcciones = fila.insertCell(5);
-                        const dataStr = JSON.stringify({docId, ...producto}).replace(/"/g, '&quot;');
-                        celdaAcciones.innerHTML = `
-                            <span class="btn-accion" onclick="window.editarProducto('${dataStr}')">✏️ Editar</span>
-                            <span class="btn-accion" onclick="window.eliminarProducto('${docId}', '${producto.nombre}')">🗑️ Eliminar</span>
+                        fila.innerHTML = `
+                            <td><strong>${p.nombre}</strong></td>
+                            <td>$${parseFloat(p.precio_venta).toFixed(2)}</td>
+                            <td>${p.stock}</td>
+                            <td>${p.codigo_barra || '-'}</td>
+                            <td>
+                                <span class="btn-accion" onclick='window.editarProducto(${JSON.stringify({docId, ...p}).replace(/'/g, "&apos;")})'>✏️ Editar</span>
+                                <span class="btn-accion" style="color:#ff6666;" onclick="window.eliminarProducto('${docId}', '${p.nombre}')">🗑️ Borrar</span>
+                            </td>
                         `;
                     });
-                } catch (error) {
-                    tablaBody.innerHTML = `<tr><td colspan="6" style="color:red;">Error: ${error.message}</td></tr>`;
-                }
+                } catch (error) { console.error(error); }
             }
 
+            // --- SOLUCIÓN AL DUPLICADO ---
             async function guardarProducto(e) {
                 e.preventDefault();
                 const docId = document.getElementById('doc_id').value;
@@ -176,22 +157,19 @@
                 };
 
                 try {
-                    if (docId) await updateDoc(doc(db, "productos", docId), data);
-                    else await addDoc(productosRef, data);
-                    alert("Guardado con éxito");
+                    if (docId) {
+                        // Si hay docId, actualizamos el documento existente en lugar de crear uno nuevo
+                        await updateDoc(doc(db, "productos", docId), data);
+                    } else {
+                        await addDoc(productosRef, data);
+                    }
                     ocultarFormulario();
                     cargarProductos();
-                } catch(err) { alert(err.message); }
+                } catch(err) { alert("Error: " + err.message); }
             }
 
-            function editarProducto(json) {
-                const p = JSON.parse(json);
-                document.getElementById('doc_id').value = p.docId;
-                document.getElementById('nombre').value = p.nombre;
-                document.getElementById('precio_venta').value = p.precio_venta;
-                document.getElementById('stock').value = p.stock;
-                document.getElementById('codigo_barra').value = p.codigo_barra;
-                mostrarFormulario();
+            function editarProducto(datos) {
+                mostrarFormulario(datos);
             }
 
             async function eliminarProducto(id, nombre) {
@@ -199,6 +177,25 @@
                     await deleteDoc(doc(db, "productos", id));
                     cargarProductos();
                 }
+            }
+
+            function configurarEscaner() {
+                let scanner = null;
+                document.getElementById('btnScan').addEventListener('click', () => {
+                    const reader = document.getElementById('reader');
+                    if (reader.style.display === 'block') {
+                        if (scanner) scanner.clear();
+                        reader.style.display = 'none';
+                        return;
+                    }
+                    reader.style.display = 'block';
+                    scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+                    scanner.render(text => {
+                        document.getElementById('codigo_barra').value = text;
+                        scanner.clear();
+                        reader.style.display = 'none';
+                    });
+                });
             }
         </script>
     </div>
